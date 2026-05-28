@@ -1,0 +1,210 @@
+/**
+ * 非同期FORM送信メソッド
+ */
+var common = common || {};
+var fileInput = fileInput || {};
+(function ($) {
+
+    //formのAjax化
+    common.submitAsync = function ($target, options) {
+        var url, type, data;
+        var isFormData = false;
+        var isForm = ($target.get(0).tagName.toUpperCase() == 'FORM');
+        var asyncSettings = $.extend({
+            background: false
+        }, options);
+
+        //送信情報を設定
+        if (isForm) {
+            url = $target.attr('action');
+            type = $target.attr('method') || 'post';
+            if (type.toUpperCase() == 'POST') {
+                //ボタン名の設定
+                var $name = $target.find('[name=_submit_button_name]');
+                if ($name.length == 0) {
+                    $name = $('<input>', {
+                        type: 'hidden',
+                        name: '_submit_button_name',
+                    });
+                    $target.append($name);
+                }
+                $name.val(common.activeButton);
+
+                //フォームデータ作成
+                data = new FormData($target.get(0));
+                isFormData = true;
+            } else {
+                data = $target.serialize();
+            }
+
+            //ファイルアップロードがある場合は追加
+            if (fileInput.dropzone && isFormData) {
+                var files = fileInput.dropzone.getAcceptedFiles();
+                for (i = 0; i < files.length; i++) {
+                    data.append((fileInput.name || 'files') + '[]', files[i]);
+                }
+            }
+
+        } else {
+            url = $target.attr('href');
+            type = $target.data('method') || 'get';
+            data = $target.data();
+            delete data['method'];
+        }
+
+        if ($target.data('disable')) {
+            //処理中
+        } else {
+            //非同期送信
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'PROGRAM-ID': $('meta[name="program-id"]').attr('content'),
+                    'KOJICODE': $('meta[name="kojicode"]').attr('content'),
+                    'SEQNO': $('meta[name="seqno"]').attr('content'),
+                    'AJAX-FORM': 'AJAX-FORM'
+                }
+            });
+            var ajaxOptions = {
+                url: url,
+                type: type,
+                data: data,
+                timeout: 300000,  // 単位はミリ秒
+                //送信前
+                beforeSend: function (xhr, settings) {
+                    console.log('remote-form:beforeSend');
+                    //フォームを無効化
+                    $target.data('disabled', false);
+                    //処理画面
+                    if (!asyncSettings.background) screen.lock();
+                },
+                //応答後
+                complete: function (xhr, textStatus) {
+                    console.log('remote-form:complete');
+                    //フォームを有効化
+                    $target.data('disabled', false);
+                    //処理画面
+                    if (!asyncSettings.background) screen.unlock();
+                },
+                //通信成功時の処理
+                success: function (result, textStatus, xhr) {
+                    console.log('remote-form:success');
+                    var callback = $target.data('success');
+                    var successId = $target.data('success-id');
+                    var redirect = $target.data('redirect-if-success');
+                    var errorId = $target.data('error-id');
+                    var content = result['content'];
+                    try {
+                        content = $.parseJSON(content);
+                    } catch (exception) {
+                        console.log('remote-form:content parseJSON error');
+                    }
+                    var message = result['message'];
+
+                    var funcRedirect = function () {
+                        //リダイレクト
+                        if (redirect) {
+                            if (typeof redirect == 'string') {
+                                if (common.canConvertFunc(redirect)) {
+                                    //コールバックメソッド呼び出し
+                                    eval(redirect + '(content, $target)');
+                                } else {
+                                    location.href = redirect;
+                                }
+                            } else {
+                                location.reload();
+                            }
+                        }
+                    };
+                    try {
+                        //エラーメッセージクリア
+                        $('#' + errorId).empty().css('display', 'none!important');
+
+                        //コールバック
+                        if (callback) {
+                            if (common.canConvertFunc(callback)) {
+                                //コールバックメソッド呼び出し
+                                eval(callback + '(content, $target)');
+                            }
+                        }
+
+                        //DOM設定
+                        if (successId) {
+                            //指定のDOMにHTMLを設定
+                            $(successId).html(content);
+                        }
+
+                        //メッセージ表示
+                        if (message) {
+                            common.showMessage(message, {'callback': funcRedirect})
+                        } else {
+                            funcRedirect();
+                        }
+                    } catch (e) {
+                        console.log('remote-form:successCallbackError');
+                        console.log(e);
+                    }
+                },
+                //通信失敗時の処理
+                error: function (xhr, textStatus, error) {
+                    console.log('remote-form:error');
+                    var callback = $target.data('error');
+                    var errorId = $target.data('error-id');
+                    try {
+                        if (errorId) {
+                            //バリデーションエラー
+                            if (xhr.status == 422) {
+                                var errorUl = $('<ul>');
+                                // var errors = xhr.responseJSON.errors;
+                                var errors = $.parseJSON(xhr.responseJSON.content).errors;
+                                if ('lock_check' in errors) {
+                                    //排他エラー
+                                    common.showConfirm('確認', errors['lock_check'], {
+                                        callback: function () {
+                                            //はい押下時
+                                            if (isForm) {
+                                                $target.append($('<input/>', {
+                                                    type: 'hidden',
+                                                    name: 'lock_check[confirmed]',
+                                                    value: '1'
+                                                }));
+                                            } else {
+                                                $target.data('lock_check[confirmed', '1');
+                                            }
+                                            common.submitAsync($target, options);
+                                        }
+                                    });
+                                } else {
+                                    //通常エラー
+                                    for (var id in errors) {
+                                        errorUl.append('<li>' + errors[id] + '</li>');
+                                    }
+                                    $('#' + errorId).empty().css('display', 'block').append(errorUl);
+                                }
+                            } else if (xhr.status == 500) {
+                                var errorMessage = '';
+                                if (xhr.responseJSON.content && typeof xhr.responseJSON.content === 'string') {
+                                    errorMessage = $.parseJSON(xhr.responseJSON.content).message;
+                                } else {
+                                    errorMessage = xhr.responseJSON.message;
+                                }
+                                var $error = $('<p>').html(errorMessage);
+                                $('#' + errorId).empty().css('display', 'block').append($error);
+                            }
+                        }
+                        if (common.canConvertFunc(callback)) {
+                            eval(callback + '(xhr.responseJSON, $target)');
+                        }
+                    } catch (e) {
+                        console.log('remote-form:successCallbackError');
+                    }
+                }
+            };
+            if (isFormData) {
+                ajaxOptions['processData'] = false;
+                ajaxOptions['contentType'] = false;
+            }
+            $.ajax(ajaxOptions);
+        }
+    };
+})(jQuery);

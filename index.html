@@ -1,0 +1,2683 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Haseko 报价点餐原型</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/xlsx-populate/browser/xlsx-populate.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      ::selection {
+        background: rgba(139, 92, 246, 0.18);
+      }
+      .excel-sheet-bg {
+        background-image:
+          linear-gradient(to right, rgba(15, 23, 42, 0.08) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(15, 23, 42, 0.08) 1px, transparent 1px);
+        background-size: 24px 24px;
+      }
+      .excel-font {
+        font-family: "MS PGothic", "Meiryo UI", "Yu Gothic UI", "Segoe UI", sans-serif;
+      }
+      .excel-cell {
+        border: 1px solid #374151;
+        padding: 4px 6px;
+      }
+      .excel-head {
+        background: #1f5f84;
+        color: #fff;
+        font-weight: 600;
+      }
+      .excel-subhead {
+        background: #e5e7eb;
+        font-weight: 600;
+      }
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+        .print-sheet {
+          box-shadow: none !important;
+          border: 0 !important;
+          margin: 0 !important;
+        }
+        body {
+          background: #fff !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-zinc-100 text-zinc-900">
+    <details class="no-print group border-b border-zinc-200/80 bg-zinc-50/90 text-left text-sm text-zinc-600 open:bg-white">
+      <summary class="cursor-pointer list-none px-4 py-2.5 marker:hidden [&::-webkit-details-marker]:hidden hover:bg-zinc-100/80">
+        <span class="font-medium text-zinc-800">类 Excel 专业表格</span>
+        <span class="text-zinc-500"> — 在 </span>
+        <code class="rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-zinc-800">excel-grid</code>
+        <span class="text-zinc-500"> 目录下 </span>
+        <code class="font-mono text-xs text-violet-600">npm install</code>
+        <span class="text-zinc-500"> · </span>
+        <code class="font-mono text-xs text-violet-600">npm run dev</code>
+        <span class="ml-1 text-zinc-400">（点击展开说明）</span>
+      </summary>
+      <div class="border-t border-zinc-100 px-4 py-3 text-xs leading-relaxed text-zinc-500">
+        使用 React Data Grid，与注文明細导入、xlsx 导出逻辑可对齐。需本机已安装 Node.js。
+      </div>
+    </details>
+    <div id="root"></div>
+    <script type="text/babel">
+      const CATEGORY_DEFS = [
+        { id: "wallpaper", label: "壁纸工事", koshu1_text: "内装工事", koshu2_text: "壁纸", sel_koshu2_cd: "001" },
+        { id: "equipment", label: "设备工事", koshu1_text: "设备工事", koshu2_text: "设备", sel_koshu2_cd: "002" },
+        { id: "floor", label: "地板工事", koshu1_text: "内装工事", koshu2_text: "地板", sel_koshu2_cd: "003" },
+        { id: "joinery", label: "建具工事", koshu1_text: "内装工事", koshu2_text: "建具", sel_koshu2_cd: "004" },
+        { id: "cleaning", label: "清扫工事", koshu1_text: "清扫工事", koshu2_text: "清扫", sel_koshu2_cd: "005" },
+        { id: "water", label: "给排水工事", koshu1_text: "设备工事", koshu2_text: "给排水", sel_koshu2_cd: "006" },
+        { id: "electric", label: "电气工事", koshu1_text: "设备工事", koshu2_text: "电气", sel_koshu2_cd: "007" },
+        { id: "paint", label: "涂装工事", koshu1_text: "内装工事", koshu2_text: "涂装", sel_koshu2_cd: "008" },
+        { id: "aircon", label: "空调工事", koshu1_text: "设备工事", koshu2_text: "空调", sel_koshu2_cd: "009" },
+        { id: "glass", label: "玻璃工事", koshu1_text: "内装工事", koshu2_text: "玻璃", sel_koshu2_cd: "010" },
+        { id: "security", label: "安防工事", koshu1_text: "设备工事", koshu2_text: "安防", sel_koshu2_cd: "011" },
+        { id: "misc", label: "杂项工事", koshu1_text: "杂项", koshu2_text: "杂项", sel_koshu2_cd: "012" },
+        { id: "others", label: "其他工事", koshu1_text: "其他", koshu2_text: "其他", sel_koshu2_cd: "013" }
+      ];
+
+      const uix = {
+        in:
+          "w-full rounded border border-zinc-200 bg-white px-2.5 py-2 text-sm text-zinc-900 transition placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-400/40",
+        card:
+          "rounded-lg border border-zinc-200 bg-white",
+        hLabel: "text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500",
+        kicker: "text-xs font-medium text-zinc-500",
+        btnMain:
+          "inline-flex min-h-9 items-center justify-center rounded bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800",
+        btnDark:
+          "inline-flex min-h-9 items-center justify-center rounded bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800",
+        btnLine:
+          "inline-flex min-h-9 items-center justify-center rounded border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50",
+        btnNav:
+          "rounded px-2 py-1 text-xs text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900"
+      };
+
+      const MENU_BY_CATEGORY = {
+        wallpaper: [
+          { taisho1: "クロス(スタンダード)", koji_naiyo: "壁纸更换", tani: "m2", tanka: 1200, basho: "洋室", bui: "壁" },
+          { taisho1: "アクセントクロス", koji_naiyo: "局部壁纸更换", tani: "m2", tanka: 1600, basho: "LDK", bui: "壁" },
+          { taisho1: "天井クロス", koji_naiyo: "天花壁纸更换", tani: "m2", tanka: 1300, basho: "洋室", bui: "天井" },
+          { taisho1: "ソフト巾木", koji_naiyo: "踢脚线更换", tani: "m", tanka: 900, basho: "洋室", bui: "巾木" }
+        ],
+        equipment: [
+          { taisho1: "温水洗浄便座", koji_naiyo: "便座更换", tani: "台", tanka: 18000, basho: "トイレ", bui: "便器" },
+          { taisho1: "混合水栓", koji_naiyo: "龙头更换", tani: "台", tanka: 14000, basho: "キッチン", bui: "水栓" },
+          { taisho1: "浴室換気扇", koji_naiyo: "换气扇更换", tani: "台", tanka: 22000, basho: "浴室", bui: "換気" },
+          { taisho1: "レンジフード", koji_naiyo: "油烟机更换", tani: "台", tanka: 42000, basho: "キッチン", bui: "換気" }
+        ]
+      };
+
+      const presetUniqueKey = (p) =>
+        [
+          p.categoryId || "",
+          p.taisho1 || "",
+          p.basho || "",
+          p.bui || "",
+          p.tani || "",
+          Number(p.tanka || 0)
+        ].join("||");
+
+      const toPresetRecord = (row) => ({
+        categoryId: row.categoryId || "misc",
+        taisho1: String(row.taisho1 || "").trim(),
+        basho: String(row.basho || "").trim(),
+        bui: String(row.bui || "").trim(),
+        tani: String(row.tani || "").trim(),
+        tanka: Number(row.tanka || 0),
+        koji_naiyo: String(row.koji_naiyo || "").trim(),
+        biko1: String(row.biko1 || "").trim()
+      });
+
+      const mergePresetMaps = (...maps) => {
+        const out = {};
+        maps.forEach((m) => {
+          Object.entries(m || {}).forEach(([categoryId, list]) => {
+            if (!out[categoryId]) out[categoryId] = [];
+            const known = new Set(out[categoryId].map((x) => presetUniqueKey(x)));
+            (list || []).forEach((item) => {
+              const rec = toPresetRecord(item);
+              if (!rec.taisho1) return;
+              const key = presetUniqueKey(rec);
+              if (!known.has(key)) {
+                out[categoryId].push(rec);
+                known.add(key);
+              }
+            });
+          });
+        });
+        return out;
+      };
+
+      const HISTORICAL_PRESETS = [
+        {
+          id: "toyosu-1415",
+          label: "エスティメゾン豊洲レジデンスＡ棟 1415号室",
+          quoteNo: "203601112",
+          roomNo: "1415号室",
+          estateName: "エスティメゾン豊洲レジデンスＡ棟",
+          workTitle: "原状回復工事",
+          rows: [
+            { categoryId: "wallpaper", taisho1: "クロス貼替え(量産品)", basho: "玄関・廊下", bui: "天井", suryo: 5, tani: "㎡", tanka: 800, biko1: "経年劣化" },
+            { categoryId: "wallpaper", taisho1: "クロス貼替え(量産品)", basho: "玄関・廊下", bui: "壁", suryo: 12.7, tani: "㎡", tanka: 800, biko1: "" },
+            { categoryId: "equipment", taisho1: "温水洗浄便座交換", basho: "トイレ", bui: "便座", suryo: 1, tani: "式", tanka: 25000, biko1: "ランプ点滅" }
+          ]
+        },
+        {
+          id: "monotono-204",
+          label: "モノトーノ門前仲町 204号室",
+          quoteNo: "203604537",
+          roomNo: "204号室",
+          estateName: "モノトーノ門前仲町",
+          workTitle: "原状回復工事",
+          rows: [
+            { categoryId: "joinery", taisho1: "フローリング・建具補修", basho: "各室", bui: "建具", suryo: 0.5, tani: "人工", tanka: 30000, biko1: "経年劣化" },
+            { categoryId: "equipment", taisho1: "便座本体交換", basho: "トイレ", bui: "便座", suryo: 1, tani: "式", tanka: 25000, biko1: "ランプ点滅" },
+            { categoryId: "cleaning", taisho1: "エアコン内部洗浄", basho: "洋室", bui: "エアコン", suryo: 1, tani: "台", tanka: 9000, biko1: "" }
+          ]
+        }
+      ];
+
+      const EXPORT_HEADERS = [
+        "row_kbn",
+        "koshu1_text",
+        "koshu2_koban",
+        "sel_koshu2_cd",
+        "koshu2_text",
+        "taisho1",
+        "taisho2",
+        "koji_naiyo",
+        "basho",
+        "bui",
+        "zumen_suryo",
+        "suryo",
+        "tani",
+        "tanka",
+        "kakaku",
+        "kashinushi_futan_wariai",
+        "kashinushi_futan_kingaku",
+        "karinushi_futan_wariai",
+        "karinushi_futan_kingaku",
+        "biko1",
+        "maker",
+        "type",
+        "comment"
+      ];
+
+      const currency = (value) => Number(value || 0).toLocaleString("ja-JP");
+      const REQUIRED_TEMPLATE_NAME = "模板.xlsx";
+      const TEMPLATE_START_ROW = 15;
+      const normalizeWallpaperName = (value) =>
+        String(value || "")
+          .replace(/\(量産品\)|（量産品）|量産品/g, "")
+          .replace(/クロス貼替え/g, "クロス貼替")
+          .trim();
+
+      /**
+       * 与 exportIntoTemplate 使用的逻辑相同：壁纸按「場所」汇总天井/壁㎡，其它工种类按行输出。
+       * 抽出为纯函数后，可脱离 模板.xlsx 用 XLSX 直接生成同结构見積書。
+       */
+      function buildTemplateRecordsFromRows(rows) {
+        const grouped = [];
+        rows.forEach((row) => {
+          const key = `${row.koshu1_text || ""}__${row.koshu2_text || ""}`;
+          let g = grouped.find((x) => x.key === key);
+          if (!g) {
+            g = {
+              key,
+              koshu1_text: row.koshu1_text || "",
+              koshu2_text: row.koshu2_text || "",
+              categoryId: row.categoryId,
+              rows: []
+            };
+            grouped.push(g);
+          }
+          g.rows.push(row);
+        });
+
+        let sectionNo = 1;
+        const out = [];
+
+        grouped.forEach((g) => {
+          const isWallpaper = g.categoryId === "wallpaper" || /クロス|壁紙|壁纸/.test(`${g.koshu1_text} ${g.koshu2_text}`);
+
+          if (isWallpaper) {
+            const totalSqm = g.rows.reduce((s, r) => s + Number(r.suryo || 0), 0);
+            out.push({
+              name: `${sectionNo}  ${g.koshu2_text || "クロス貼替工事"}`,
+              basho: "",
+              bui: "",
+              qty: "",
+              unit: "",
+              unitPrice: "",
+              amount: "",
+              ownerRate: "",
+              ownerCost: "",
+              tenantRate: "",
+              tenantCost: "",
+              note: ""
+            });
+            out.push({
+              name: "　　クロス貼替",
+              basho: "",
+              bui: "",
+              qty: "",
+              unit: "",
+              unitPrice: "",
+              amount: "",
+              ownerRate: "",
+              ownerCost: "",
+              tenantRate: "",
+              tenantCost: "",
+              note: `総㎡  ${totalSqm.toFixed(1)}㎡`
+            });
+            out.push({
+              name: "　【内訳】",
+              basho: "天井",
+              bui: "壁",
+              qty: "",
+              unit: "",
+              unitPrice: "",
+              amount: "",
+              ownerRate: "",
+              ownerCost: "",
+              tenantRate: "",
+              tenantCost: "",
+              note: ""
+            });
+
+            const byBasho = {};
+            g.rows.forEach((r) => {
+              const place = r.basho || "その他";
+              if (!byBasho[place]) byBasho[place] = { ceil: 0, wall: 0, unitPrice: 0, note: "" };
+              const qty = Number(r.suryo || 0);
+              if (/天井/.test(r.bui || "")) byBasho[place].ceil += qty;
+              else byBasho[place].wall += qty;
+              if (!byBasho[place].unitPrice) byBasho[place].unitPrice = Number(r.tanka || 0);
+              if (!byBasho[place].note && r.biko1) byBasho[place].note = r.biko1;
+            });
+
+            Object.entries(byBasho).forEach(([place, v]) => {
+              const sum = v.ceil + v.wall;
+              out.push({
+                name: `　　${place}`,
+                basho: v.ceil ? String(v.ceil) : "",
+                bui: v.wall ? String(v.wall) : "",
+                qty: String(sum),
+                unit: "㎡",
+                unitPrice: v.unitPrice ? String(v.unitPrice) : "",
+                amount: v.unitPrice ? String(Math.round(sum * v.unitPrice)) : "",
+                ownerRate: "",
+                ownerCost: "",
+                tenantRate: "",
+                tenantCost: "",
+                note: v.note || ""
+              });
+            });
+          } else {
+            out.push({
+              name: `${sectionNo}  ${g.koshu2_text || g.koshu1_text || "工事"}`,
+              basho: "",
+              bui: "",
+              qty: "",
+              unit: "",
+              unitPrice: "",
+              amount: "",
+              ownerRate: "",
+              ownerCost: "",
+              tenantRate: "",
+              tenantCost: "",
+              note: ""
+            });
+            g.rows.forEach((r) => {
+              out.push({
+                name: r.taisho1 || r.koji_naiyo || "",
+                basho: r.basho || "",
+                bui: r.bui || "",
+                qty: Number(r.suryo || 0),
+                unit: r.tani || "",
+                unitPrice: Number(r.tanka || 0),
+                amount: Number(r.price || 0),
+                ownerRate: Number(r.ownerRate || 0),
+                ownerCost: Number(r.ownerCost || 0),
+                tenantRate: Number(r.tenantRate || 0),
+                tenantCost: Number(r.tenantCost || 0),
+                note: r.biko1 || ""
+              });
+            });
+          }
+          sectionNo += 1;
+        });
+        return out;
+      }
+
+      function computeMitsumoriTotals(activeRows, costRules) {
+        const totalPrice = activeRows.reduce((sum, row) => sum + Number(row.price || 0), 0);
+        const ownerTotal = activeRows.reduce((sum, row) => sum + Number(row.ownerCost || 0), 0);
+        const tenantTotal = activeRows.reduce((sum, row) => sum + Number(row.tenantCost || 0), 0);
+        const overhead = Math.round((totalPrice * Number(costRules.overheadRate || 0)) / 100);
+        const middleTotal = totalPrice + overhead;
+        const discount = -(middleTotal % 1000);
+        const quoteTotal = middleTotal + discount;
+        const tax = Math.round((quoteTotal * Number(costRules.taxRate || 0)) / 100);
+        const grandTotal = quoteTotal + tax;
+        return { totalPrice, ownerTotal, tenantTotal, overhead, middleTotal, discount, quoteTotal, tax, grandTotal };
+      }
+
+      const COL_HASEKO = 9;
+
+      const padHasekoRow = (cells) => {
+        const r = Array.isArray(cells) ? [...cells] : [cells];
+        while (r.length < COL_HASEKO) r.push("");
+        return r.slice(0, COL_HASEKO);
+      };
+
+      const fmtM2 = (v) => {
+        if (v === 0 || v === "" || v == null) return "";
+        const n = Number(v);
+        if (Number.isNaN(n) || n === 0) return "";
+        if (Number.isInteger(n) || Math.abs(n - Math.round(n)) < 0.0001) return String(Math.round(n));
+        const s = n.toFixed(1);
+        return s.endsWith(".0") ? String(Math.round(n)) : s;
+      };
+
+      /**
+       * 长谷工式クロス内訳：番号/名称(含工種) | 天井 | 壁 | 単位 | 数量 | 単価 | 合計 | 備考
+       * 合計欄行可写字典 SP2519；内訳行 数量=天井+壁㎡。
+       */
+      function buildHasekoStyleDetailAoa(activeRows, projectInfo) {
+        const grouped = [];
+        activeRows.forEach((row) => {
+          const key = `${row.koshu1_text || ""}__${row.koshu2_text || ""}`;
+          let g = grouped.find((x) => x.key === key);
+          if (!g) {
+            g = {
+              key,
+              koshu1_text: row.koshu1_text || "",
+              koshu2_text: row.koshu2_text || "",
+              categoryId: row.categoryId,
+              rows: []
+            };
+            grouped.push(g);
+          }
+          g.rows.push(row);
+        });
+
+        const spCode = (projectInfo.crossSpecCode && String(projectInfo.crossSpecCode).trim()) || "SP2519";
+        const brTanka = Number(projectInfo.boardRepairTanka);
+        const rows = [];
+        let sectionNo = 1;
+
+        grouped.forEach((g) => {
+          const isWallpaper = g.categoryId === "wallpaper" || /クロス|壁紙|壁纸/.test(`${g.koshu1_text} ${g.koshu2_text}`);
+
+          if (isWallpaper) {
+            const totalSqm = g.rows.reduce((s, r) => s + Number(r.suryo || 0), 0);
+            rows.push(
+              padHasekoRow([String(sectionNo), "クロス貼替工事", "", "", "", "", "", spCode, ""])
+            );
+            rows.push(
+              padHasekoRow([
+                "",
+                `クロス貼替  総m² ${totalSqm.toFixed(1)}m²`,
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ])
+            );
+            rows.push(padHasekoRow(["", "【内訳】", "天井", "壁", "", "", "", "", ""]));
+
+            const byBasho = {};
+            g.rows.forEach((r) => {
+              const place = r.basho || "その他";
+              if (!byBasho[place]) byBasho[place] = { ceil: 0, wall: 0, unitPrice: 0, note: "" };
+              const q = Number(r.suryo || 0);
+              if (/天井/.test(r.bui || "")) byBasho[place].ceil += q;
+              else byBasho[place].wall += q;
+              if (!byBasho[place].unitPrice) byBasho[place].unitPrice = Number(r.tanka || 0);
+              if (!byBasho[place].note && r.biko1) byBasho[place].note = r.biko1;
+            });
+
+            Object.entries(byBasho).forEach(([place, v]) => {
+              const sum = v.ceil + v.wall;
+              const up = v.unitPrice || 0;
+              const amt = up ? Math.round(sum * up) : "";
+              rows.push(
+                padHasekoRow([
+                  "",
+                  place,
+                  fmtM2(v.ceil),
+                  fmtM2(v.wall),
+                  "㎡",
+                  fmtM2(sum) || String(sum),
+                  up || "",
+                  amt,
+                  v.note || ""
+                ])
+              );
+            });
+
+            if (Number.isFinite(brTanka) && brTanka > 0) {
+              rows.push(
+                padHasekoRow(["", "ボード補修＋下地処理", "", "", "式", 1, brTanka, brTanka, ""])
+              );
+            }
+          } else {
+            rows.push(
+              padHasekoRow([
+                String(sectionNo),
+                `${g.koshu2_text || g.koshu1_text || "工事"}`,
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+              ])
+            );
+            g.rows.forEach((r) => {
+              const pr = Number(r.tanka || 0);
+              const qty = Number(r.suryo || 0);
+              const amt = Number(r.price != null ? r.price : Math.round(qty * pr)) || 0;
+              rows.push(
+                padHasekoRow([
+                  "",
+                  r.taisho1 || r.koji_naiyo || "",
+                  "",
+                  "",
+                  r.tani || "",
+                  qty,
+                  pr,
+                  amt,
+                  r.biko1 || ""
+                ])
+              );
+            });
+          }
+          sectionNo += 1;
+        });
+        return rows;
+      }
+
+      function buildMitsumoriWorkbookAoA(projectInfo, costRules, activeRows) {
+        const extraBoard = Number(projectInfo.boardRepairTanka) > 0 ? Number(projectInfo.boardRepairTanka) : 0;
+        const rowsForTotal =
+          extraBoard > 0
+            ? [...activeRows, { price: extraBoard, ownerCost: extraBoard, tenantCost: 0, ownerRate: 100, tenantRate: 0 }]
+            : activeRows;
+        const t = computeMitsumoriTotals(rowsForTotal, costRules);
+        const taxRateN = Number(costRules.taxRate || 0) / 100;
+        const ownerTaxAmt = Math.round((t.ownerTotal + t.overhead + t.discount) * taxRateN);
+        const tenantTaxAmt = Math.round(t.tenantTotal * taxRateN);
+        const y = (n) => (n || 0).toLocaleString("ja-JP");
+        const aoa = [];
+        const merges = [];
+        aoa.push(padHasekoRow([`No. ${projectInfo.quoteNo || "-"}`, "", "", "", "", "", "", "", ""]));
+        aoa.push(padHasekoRow([]));
+        aoa.push(padHasekoRow(["御見積書", "", "", "", "", "", "", "", ""]));
+        aoa.push(padHasekoRow([]));
+        aoa.push(
+          padHasekoRow([
+            "",
+            "株式会社長谷工ライブネット 御中",
+            "",
+            "",
+            "",
+            "見積日",
+            projectInfo.createdAt || "",
+            "",
+            ""
+          ])
+        );
+        aoa.push(
+          padHasekoRow([
+            "",
+            "下記の通りお見積致しました。何卒ご用命下さりますようお願い申し上げます。",
+            "",
+            "",
+            "",
+            "見積金額（税込）",
+            `¥${y(t.grandTotal)}-`,
+            "",
+            ""
+          ])
+        );
+        aoa.push(padHasekoRow([]));
+        aoa.push(
+          padHasekoRow([
+            "",
+            "株式会社ユービックス",
+            "",
+            "",
+            "",
+            "物件名・号室",
+            `${projectInfo.estateName || ""} ${projectInfo.roomNo || ""}`,
+            "",
+            ""
+          ])
+        );
+        aoa.push(
+          padHasekoRow([
+            "TEL: 03-6661-9011",
+            "",
+            "",
+            "",
+            "",
+            "工事名称",
+            projectInfo.workTitle || "",
+            "",
+            ""
+          ])
+        );
+        aoa.push(
+          padHasekoRow([
+            "FAX: 03-6661-9012",
+            "",
+            "",
+            "",
+            "",
+            "担当",
+            projectInfo.tantosha || "-",
+            "",
+            ""
+          ])
+        );
+        aoa.push(padHasekoRow([]));
+
+        const colLabelRow = aoa.length;
+        aoa.push(padHasekoRow(["", "1-29列", "", "", "35-37列", "38-40列", "41-44列", "45-48列", "29列"]));
+        merges.push({ s: { r: colLabelRow, c: 1 }, e: { r: colLabelRow, c: 3 } });
+
+        aoa.push(padHasekoRow(["", "名称", "天井", "壁", "単位", "数量", "単価", "合計", "備考"]));
+
+        const detailRows = buildHasekoStyleDetailAoa(activeRows, projectInfo);
+        detailRows.forEach((r) => aoa.push(r));
+
+        aoa.push(padHasekoRow([]));
+        aoa.push(padHasekoRow(["", "小計", "", "", "", "", "", t.totalPrice, ""]));
+        aoa.push(padHasekoRow(["", `諸経費 ${costRules.overheadRate}%`, "", "", "", "", "", t.overhead, ""]));
+        aoa.push(padHasekoRow(["", "中計", "", "", "", "", "", t.middleTotal, ""]));
+        aoa.push(padHasekoRow(["", "出精値引", "", "", "", "", "", t.discount, ""]));
+        aoa.push(padHasekoRow(["", "合計", "", "", "", "", "", t.quoteTotal, ""]));
+        aoa.push(padHasekoRow(["", `消費税 ${costRules.taxRate}%`, "", "", "", "", "", t.tax, ""]));
+        aoa.push(
+          padHasekoRow(["", "総合計", "", "", "", "", "", t.grandTotal, ""])
+        );
+        aoa.push(padHasekoRow([]));
+        aoa.push(padHasekoRow(["", "<<備考>>", "", "", "", "", "", "", ""]));
+        aoa.push(padHasekoRow([projectInfo.memo || "", "", "", "", "", "", "", "", ""]));
+
+        return {
+          aoa,
+          merges,
+          cols: [6, 20, 9, 9, 7, 9, 11, 12, 18].map((wch) => ({ wch }))
+        };
+      }
+
+      function downloadMitsumoriXlsxFromAoA(aoa, fileName, options = {}) {
+        if (typeof XLSX === "undefined" || !XLSX.utils) {
+          throw new Error("XLSX 未加载，请检查 xlsx.full.min.js");
+        }
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        if (options.merges && options.merges.length) {
+          ws["!merges"] = options.merges;
+        }
+        ws["!cols"] = (options.cols && options.cols.length ? options.cols : [20, 14, 10, 10, 8, 8, 10, 12, 20]).map((c) =>
+          typeof c === "number" ? { wch: c } : c
+        );
+        XLSX.utils.book_append_sheet(wb, ws, "見積書");
+        const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+        const blob = new Blob([out], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      /**
+       * 与 scripts/test-orderbook-data.mjs 中 tryParseChumonMeisaiUbix 同逻辑（AOA 输入）。
+       * 列2=場所、13=天井㎡、17=壁㎡、40=単価、28=備考
+       */
+      function parseChumonMeisaiUbixAoa(aoa) {
+        const out = [];
+        const mk = (o) => {
+          const p = Math.round(o.suryo * o.tanka);
+          return { ...o, price: p, ownerRate: 100, ownerCost: p, tenantRate: 0, tenantCost: 0, koshu2_koban: "", taisho2: "", koji_naiyo: "", maker: "" };
+        };
+        let inCross = false;
+        for (let i = 0; i < aoa.length; i++) {
+          const r = aoa[i] || [];
+          const c0 = r[0];
+          const c2 = String(r[2] ?? "").trim();
+          if ((c0 === 1 || String(c0) === "1") && c2 === "クロス") {
+            inCross = true;
+            continue;
+          }
+          if (inCross) {
+            if ((c0 === 2 || String(c0) === "2") && /下地|補助/.test(c2)) {
+              inCross = false;
+              break;
+            }
+            if (c2.startsWith("※")) continue;
+            if (c2.startsWith("アクセント")) {
+              inCross = false;
+              continue;
+            }
+          }
+          if (!c2 || c2.length < 2) continue;
+          const ce = Number(r[13]);
+          const wa = Number(r[17]);
+          const ta = Number(r[40]) || 0;
+          if ((!Number.isFinite(ce) || ce <= 0) && (!Number.isFinite(wa) || wa <= 0)) continue;
+          if (ta <= 0) continue;
+          if (inCross) {
+            if (ce > 0) out.push(mk({ categoryId: "wallpaper", koshu1_text: "通常工事", koshu2_text: "内装", taisho1: "ｸﾛｽ(注文明細)", basho: c2, bui: "天井", suryo: ce, tani: "㎡", tanka: ta, biko1: String(r[28] ?? "").slice(0, 40) }));
+            if (wa > 0) out.push(mk({ categoryId: "wallpaper", koshu1_text: "通常工事", koshu2_text: "内装", taisho1: "ｸﾛｽ(注文明細)", basho: c2, bui: "壁", suryo: wa, tani: "㎡", tanka: ta, biko1: String(r[28] ?? "").slice(0, 40) }));
+          }
+        }
+        return { ok: out.length > 0, count: out.length, rows: out, source: "chumon_注文明細" };
+      }
+
+      function App() {
+        const [activeCategory, setActiveCategory] = React.useState("wallpaper");
+        const [rows, setRows] = React.useState([]);
+        const [viewMode, setViewMode] = React.useState("entry");
+        /** 明細编辑区：左一覧で選んだ工事区分（13 工种のどれか） */
+        const [gridFocusCategory, setGridFocusCategory] = React.useState("wallpaper");
+        React.useEffect(() => {
+          const vis = rows.filter((r) => r.rowState !== "deleted");
+          if (!vis.length) return;
+          if (!vis.some((r) => r.categoryId === gridFocusCategory)) {
+            setGridFocusCategory(vis[0].categoryId);
+          }
+        }, [rows]);
+        const [projectInfo, setProjectInfo] = React.useState({
+          quoteNo: "203604537",
+          estateName: "エスティメゾン豊洲レジデンスＡ棟",
+          roomNo: "1415号室",
+          workTitle: "原状回復工事",
+          createdAt: new Date().toISOString().slice(0, 10),
+          revisedAt: "",
+          tantosha: "真通",
+          memo: "",
+          crossSpecCode: "SP2519",
+          boardRepairTanka: ""
+        });
+        const [costRules, setCostRules] = React.useState({
+          overheadRate: 6,
+          taxRate: 10
+        });
+        const [templateFile, setTemplateFile] = React.useState(null);
+        const [templateStatus, setTemplateStatus] = React.useState("");
+        const [exportStatus, setExportStatus] = React.useState("");
+        const [validationErrors, setValidationErrors] = React.useState([]);
+        const [selectedPresetId, setSelectedPresetId] = React.useState("");
+        const [dataSourceMode, setDataSourceMode] = React.useState("blank");
+        const [historyHtmlFile, setHistoryHtmlFile] = React.useState(null);
+        const [chumonXlsxFile, setChumonXlsxFile] = React.useState(null);
+        const [engineResultText, setEngineResultText] = React.useState("");
+        const [engineSummary, setEngineSummary] = React.useState(null);
+        /** buildHasekoEnginePayload 的完整对象，用于灌入模板.xlsx */
+        const [enginePayload, setEnginePayload] = React.useState(null);
+        const [customPresetMap, setCustomPresetMap] = React.useState(() => {
+          try {
+            const raw = window.localStorage.getItem("haseko.customPresetMap.v1");
+            return raw ? JSON.parse(raw) : {};
+          } catch {
+            return {};
+          }
+        });
+        const [selectedRowIds, setSelectedRowIds] = React.useState([]);
+        const [projectInfoExpanded, setProjectInfoExpanded] = React.useState(false);
+        const [printPreviewCollapsed, setPrintPreviewCollapsed] = React.useState(false);
+        const [focusedCell, setFocusedCell] = React.useState(null);
+        const [pasteMode, setPasteMode] = React.useState("grid");
+        const [gridDensity, setGridDensity] = React.useState("standard");
+        const [columnWidths, setColumnWidths] = React.useState({
+          select: 48,
+          no: 64,
+          taisho1: 420,
+          tani: 90,
+          suryo: 110,
+          tanka: 120,
+          total: 130,
+          biko1: 260,
+          insert: 90,
+          action: 90
+        });
+        const [bulkValues, setBulkValues] = React.useState({
+          tanka: "",
+          tani: "",
+          biko1: ""
+        });
+        const resizingRef = React.useRef(null);
+
+        const builtInPresetMap = React.useMemo(() => {
+          const out = {};
+          Object.entries(MENU_BY_CATEGORY).forEach(([categoryId, list]) => {
+            out[categoryId] = (list || []).map((item) => toPresetRecord({ categoryId, ...item }));
+          });
+          return out;
+        }, []);
+        const availablePresetMap = React.useMemo(
+          () => mergePresetMaps(customPresetMap, builtInPresetMap),
+          [customPresetMap, builtInPresetMap]
+        );
+        const currentMenu = availablePresetMap[activeCategory] || [];
+        const activeDef = CATEGORY_DEFS.find((c) => c.id === activeCategory);
+
+        React.useEffect(() => {
+          try {
+            window.localStorage.setItem("haseko.customPresetMap.v1", JSON.stringify(customPresetMap));
+          } catch {}
+        }, [customPresetMap]);
+
+        const addItem = (preset) => {
+          const suryo = 1;
+          const tanka = Number(preset.tanka || 0);
+          setRows((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              categoryId: activeCategory,
+              koshu1_text: activeDef.koshu1_text,
+              koshu2_text: activeDef.koshu2_text,
+              koshu2_koban: "",
+              sel_koshu2_cd: activeDef.sel_koshu2_cd,
+              taisho1: activeCategory === "wallpaper" ? normalizeWallpaperName(preset.taisho1 || "") : (preset.taisho1 || ""),
+              taisho2: "",
+              koji_naiyo: preset.koji_naiyo || "",
+              basho: preset.basho || "",
+              bui: preset.bui || "",
+              zumen_suryo: "",
+              suryo,
+              tani: preset.tani || "",
+              tanka,
+              price: suryo * tanka,
+              ownerRate: 100,
+              tenantRate: 0,
+              ownerCost: suryo * tanka,
+              tenantCost: 0,
+              biko1: "",
+              maker: "",
+              type: "",
+              comment: "",
+              rowState: "new",
+              source: "manual"
+            }
+          ]);
+        };
+
+        const createBlankRow = (categoryId = activeCategory) => {
+          const def = CATEGORY_DEFS.find((c) => c.id === categoryId) || activeDef || CATEGORY_DEFS[0];
+          return {
+          id: crypto.randomUUID(),
+          categoryId: def.id,
+          koshu1_text: def.koshu1_text,
+          koshu2_text: def.koshu2_text,
+          koshu2_koban: "",
+          sel_koshu2_cd: def.sel_koshu2_cd,
+          taisho1: "",
+          taisho2: "",
+          koji_naiyo: "",
+          basho: "",
+          bui: "",
+          zumen_suryo: "",
+          suryo: 0,
+          tani: "㎡",
+          tanka: 0,
+          price: 0,
+          ownerRate: 100,
+          tenantRate: 0,
+          ownerCost: 0,
+          tenantCost: 0,
+          biko1: "",
+          maker: "",
+          type: "",
+          comment: "",
+          rowState: "new",
+          source: "manual"
+          };
+        };
+
+        const createRowWithPatch = (patch = {}) => {
+          const base = createBlankRow(patch.categoryId);
+          const next = { ...base, ...patch };
+          const qty = Number(next.suryo || 0);
+          const unitPrice = Number(next.tanka || 0);
+          next.price = qty * unitPrice;
+          next.ownerCost = Math.round((next.price * Number(next.ownerRate || 0)) / 100);
+          next.tenantCost = Math.round((next.price * Number(next.tenantRate || 0)) / 100);
+          return next;
+        };
+
+        const addCustomRow = () => setRows((prev) => [...prev, createBlankRow()]);
+        const addCustomRowForCategory = (categoryId) => setRows((prev) => [...prev, createBlankRow(categoryId)]);
+
+        const upsertCustomPresetsFromRows = (rowsInput = []) => {
+          const derivedMap = {};
+          rowsInput.forEach((row) => {
+            const rec = toPresetRecord(row);
+            if (!rec.taisho1) return;
+            if (!derivedMap[rec.categoryId]) derivedMap[rec.categoryId] = [];
+            derivedMap[rec.categoryId].push(rec);
+          });
+          setCustomPresetMap((prev) => mergePresetMaps(prev, derivedMap));
+        };
+
+        /** 当前行写入「常用工事项」（localStorage haseko.customPresetMap.v1） */
+        const saveRowAsCustomPreset = (row) => {
+          if (!String(row.taisho1 || "").trim()) {
+            setExportStatus("请先填写工事内容，再点「存常用」。");
+            return;
+          }
+          const rec = toPresetRecord(row);
+          setCustomPresetMap((prev) => mergePresetMaps(prev, { [row.categoryId]: [rec] }));
+          setExportStatus(`已保存为常用工事项：${rec.taisho1}`);
+        };
+
+        /** 仅从自定义常用表删除（不影响内置 MENU） */
+        const removeCustomPresetByKey = (categoryId, presetKey) => {
+          setCustomPresetMap((prev) => {
+            const list = prev[categoryId];
+            if (!list || !list.length) return prev;
+            const nextList = list.filter((p) => presetUniqueKey(p) !== presetKey);
+            if (nextList.length === 0) {
+              const next = { ...prev };
+              delete next[categoryId];
+              return next;
+            }
+            return { ...prev, [categoryId]: nextList };
+          });
+          setExportStatus("已从常用列表删除该项。");
+        };
+
+        const insertWallpaperTemplateRows = () => {
+          const templateRows = [
+            createRowWithPatch({ taisho1: "クロス貼替工事", tani: "式", suryo: 1, tanka: 0, biko1: "テンプレート行" }),
+            createRowWithPatch({ taisho1: "クロス貼替", tani: "㎡", suryo: 0, tanka: 0 }),
+            createRowWithPatch({ taisho1: "【内訳】", tani: "式", suryo: 1, tanka: 0 })
+          ];
+          setRows((prev) => [...prev, ...templateRows]);
+          setExportStatus("已插入壁纸段落模板行。");
+        };
+
+        const addRowAfter = (id) => {
+          const targetIndex = rows.findIndex((r) => r.id === id);
+          if (targetIndex < 0) {
+            addCustomRow();
+            return;
+          }
+          const cloned = createBlankRow();
+          setRows((prev) => {
+            const next = [...prev];
+            next.splice(targetIndex + 1, 0, cloned);
+            return next;
+          });
+        };
+
+        const updateProjectInfo = (key, value) => {
+          setProjectInfo((prev) => ({ ...prev, [key]: value }));
+        };
+
+        const updateRow = (id, key, value) => {
+          setRows((prev) =>
+            prev.map((row) => {
+              if (row.id !== id) return row;
+              if (key === "categoryId") {
+                const def = CATEGORY_DEFS.find((c) => c.id === value) || CATEGORY_DEFS[0];
+                const next = {
+                  ...row,
+                  categoryId: def.id,
+                  koshu1_text: def.koshu1_text,
+                  koshu2_text: def.koshu2_text,
+                  sel_koshu2_cd: def.sel_koshu2_cd
+                };
+                if (next.rowState === "original") next.rowState = "modified";
+                return next;
+              }
+              if (key === "presetKey") {
+                const preset = (availablePresetMap[row.categoryId] || []).find((p) => presetUniqueKey(p) === value);
+                if (!preset) return row;
+                const next = {
+                  ...row,
+                  taisho1: row.categoryId === "wallpaper" ? normalizeWallpaperName(preset.taisho1) : preset.taisho1,
+                  basho: preset.basho || row.basho,
+                  bui: preset.bui || row.bui,
+                  tani: preset.tani || row.tani,
+                  tanka: Number(preset.tanka || 0),
+                  koji_naiyo: preset.koji_naiyo || row.koji_naiyo,
+                  biko1: preset.biko1 || row.biko1
+                };
+                const qty = Number(next.suryo || 0);
+                next.price = qty * Number(next.tanka || 0);
+                next.ownerCost = Math.round((next.price * Number(next.ownerRate || 0)) / 100);
+                next.tenantCost = Math.round((next.price * Number(next.tenantRate || 0)) / 100);
+                if (next.rowState === "original") next.rowState = "modified";
+                return next;
+              }
+              const normalizedValue =
+                key === "taisho1" && row.categoryId === "wallpaper"
+                  ? normalizeWallpaperName(value)
+                  : value;
+              const next = { ...row, [key]: normalizedValue };
+              const qty = Number(next.suryo || 0);
+              const unitPrice = Number(next.tanka || 0);
+              next.price = qty * unitPrice;
+              const ownerRate = Number(next.ownerRate || 0);
+              const tenantRate = Number(next.tenantRate || 0);
+              next.ownerCost = Math.round((next.price * ownerRate) / 100);
+              next.tenantCost = Math.round((next.price * tenantRate) / 100);
+              if (next.rowState === "original") next.rowState = "modified";
+              return next;
+            })
+          );
+        };
+
+        const removeRow = (id) => setRows((prev) => prev.map((r) => {
+          if (r.id !== id) return r;
+          if (r.rowState === "new") return { ...r, rowState: "deleted" };
+          return { ...r, rowState: r.rowState === "deleted" ? "modified" : "deleted" };
+        }));
+
+        const toggleRowSelection = (id) => {
+          setSelectedRowIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+        };
+
+        const deleteSelectedRows = () => {
+          if (selectedRowIds.length === 0) return;
+          setRows((prev) =>
+            prev.map((r) => {
+              if (!selectedRowIds.includes(r.id)) return r;
+              if (r.rowState === "new") return { ...r, rowState: "deleted" };
+              return { ...r, rowState: r.rowState === "deleted" ? "modified" : "deleted" };
+            })
+          );
+          setSelectedRowIds([]);
+        };
+
+        const duplicateSelectedRows = () => {
+          if (selectedRowIds.length === 0) return;
+          setRows((prev) => {
+            const selected = prev.filter((r) => selectedRowIds.includes(r.id) && r.rowState !== "deleted");
+            const clones = selected.map((r) => ({
+              ...r,
+              id: crypto.randomUUID(),
+              rowState: "new",
+              source: "manual"
+            }));
+            return [...prev, ...clones];
+          });
+        };
+
+        const applyBulkToSelected = () => {
+          if (selectedRowIds.length === 0) return;
+          setRows((prev) =>
+            prev.map((r) => {
+              if (!selectedRowIds.includes(r.id) || r.rowState === "deleted") return r;
+              const next = { ...r };
+              if (bulkValues.tanka !== "") next.tanka = bulkValues.tanka;
+              if (bulkValues.tani !== "") next.tani = bulkValues.tani;
+              if (bulkValues.biko1 !== "") next.biko1 = bulkValues.biko1;
+              const qty = Number(next.suryo || 0);
+              const unitPrice = Number(next.tanka || 0);
+              next.price = qty * unitPrice;
+              if (next.rowState === "original") next.rowState = "modified";
+              return next;
+            })
+          );
+          setExportStatus(`已批量应用到 ${selectedRowIds.length} 行。`);
+        };
+
+        const getRowCellOrder = () => ["taisho1", "tani", "suryo", "tanka", "biko1"];
+
+        const focusCell = (rowId, field) => {
+          const el = document.querySelector(`[data-cell="${rowId}:${field}"]`);
+          if (el) el.focus();
+        };
+
+        const handleGridKeyDown = (event, rowId, field) => {
+          const order = getRowCellOrder();
+          const fieldIndex = order.indexOf(field);
+          const visibleRows = rows.filter((r) => r.rowState !== "deleted");
+          const rowIndex = visibleRows.findIndex((r) => r.id === rowId);
+          if (rowIndex < 0 || fieldIndex < 0) return;
+
+          if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            if (fieldIndex > 0) focusCell(rowId, order[fieldIndex - 1]);
+            return;
+          }
+          if (event.key === "ArrowRight") {
+            event.preventDefault();
+            if (fieldIndex < order.length - 1) focusCell(rowId, order[fieldIndex + 1]);
+            return;
+          }
+          if (event.key === "ArrowUp") {
+            event.preventDefault();
+            if (rowIndex > 0) focusCell(visibleRows[rowIndex - 1].id, field);
+            return;
+          }
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            if (rowIndex < visibleRows.length - 1) focusCell(visibleRows[rowIndex + 1].id, field);
+            return;
+          }
+          if (event.key === "Enter") {
+            event.preventDefault();
+            if (fieldIndex < order.length - 1) {
+              focusCell(rowId, order[fieldIndex + 1]);
+              return;
+            }
+            const nextIndex = rowIndex + 1;
+            if (nextIndex < visibleRows.length) {
+              focusCell(visibleRows[nextIndex].id, order[0]);
+            } else {
+              const newRowId = crypto.randomUUID();
+              setRows((prev) => [...prev, { ...createBlankRow(), id: newRowId }]);
+              setTimeout(() => focusCell(newRowId, order[0]), 30);
+            }
+          }
+        };
+
+        const beginResize = (columnKey, event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const startX = event.clientX;
+          const startWidth = columnWidths[columnKey] || 100;
+          resizingRef.current = { columnKey, startX, startWidth };
+          const onMove = (moveEvent) => {
+            if (!resizingRef.current) return;
+            const delta = moveEvent.clientX - resizingRef.current.startX;
+            const next = Math.max(56, resizingRef.current.startWidth + delta);
+            setColumnWidths((prev) => ({ ...prev, [columnKey]: next }));
+          };
+          const onUp = () => {
+            window.removeEventListener("mousemove", onMove);
+            window.removeEventListener("mouseup", onUp);
+            resizingRef.current = null;
+          };
+          window.addEventListener("mousemove", onMove);
+          window.addEventListener("mouseup", onUp);
+        };
+
+        const handleGridPaste = (event, rowId, field) => {
+          const raw = event.clipboardData?.getData("text");
+          if (!raw) return;
+          const matrix = raw
+            .split(/\r?\n/)
+            .map((line) => line.split("\t"))
+            .filter((cols) => cols.some((c) => String(c).trim() !== ""));
+          if (matrix.length === 0) return;
+          event.preventDefault();
+
+          const order = getRowCellOrder();
+          const columnModeMap = {
+            qty: "suryo",
+            tanka: "tanka",
+            biko: "biko1",
+            name: "taisho1"
+          };
+          const modeField = pasteMode === "grid" ? field : (columnModeMap[pasteMode] || field);
+          const startCol = order.indexOf(modeField);
+          const visibleRows = rows.filter((r) => r.rowState !== "deleted");
+          const startRowIndex = visibleRows.findIndex((r) => r.id === rowId);
+          if (startCol < 0 || startRowIndex < 0) return;
+
+          setRows((prev) => {
+            const visibleIds = prev.filter((r) => r.rowState !== "deleted").map((r) => r.id);
+            return prev.map((row) => {
+              const vIdx = visibleIds.indexOf(row.id);
+              if (vIdx < startRowIndex || vIdx >= startRowIndex + matrix.length) return row;
+              const rOff = vIdx - startRowIndex;
+              let next = { ...row };
+              if (pasteMode === "grid") {
+                matrix[rOff].forEach((cellValue, cOff) => {
+                  const colField = order[startCol + cOff];
+                  if (!colField) return;
+                  const val = String(cellValue ?? "").trim();
+                  if (colField === "taisho1" && next.categoryId === "wallpaper") next[colField] = normalizeWallpaperName(val);
+                  else next[colField] = val;
+                });
+              } else {
+                const cellValue = matrix[rOff]?.[0] ?? "";
+                const val = String(cellValue).trim();
+                if (modeField === "taisho1" && next.categoryId === "wallpaper") next[modeField] = normalizeWallpaperName(val);
+                else next[modeField] = val;
+              }
+              const qty = Number(next.suryo || 0);
+              const unitPrice = Number(next.tanka || 0);
+              next.price = qty * unitPrice;
+              if (next.rowState === "original") next.rowState = "modified";
+              return next;
+            });
+          });
+        };
+
+        const scrollToSection = (sectionId) => {
+          const el = document.getElementById(sectionId);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        };
+
+        const jumpToError = (errorText) => {
+          const m = String(errorText).match(/第(\d+)行/);
+          if (!m) return;
+          const rowNumber = Number(m[1]);
+          if (!Number.isFinite(rowNumber) || rowNumber <= 0) return;
+          const row = rows[rowNumber - 1];
+          if (!row) return;
+          scrollToSection("section-grid");
+          setTimeout(() => {
+            const tr = document.querySelector(`[data-row-id="${row.id}"]`);
+            if (tr) tr.scrollIntoView({ behavior: "smooth", block: "center" });
+            focusCell(row.id, "taisho1");
+          }, 200);
+        };
+
+        const activeRows = rows.filter((r) => r.rowState !== "deleted");
+
+        const loadHistoryPreset = () => {
+          const preset = HISTORICAL_PRESETS.find((p) => p.id === selectedPresetId);
+          if (!preset) {
+            setExportStatus("请先选择一个历史見積書预设。");
+            return;
+          }
+          const presetRows = preset.rows.map((r) => {
+            const category = CATEGORY_DEFS.find((c) => c.id === r.categoryId) || CATEGORY_DEFS[0];
+            const suryo = Number(r.suryo || 0);
+            const tanka = Number(r.tanka || 0);
+            const price = Math.round(suryo * tanka);
+            return {
+              id: crypto.randomUUID(),
+              categoryId: category.id,
+              koshu1_text: category.koshu1_text,
+              koshu2_text: category.koshu2_text,
+              koshu2_koban: "",
+              sel_koshu2_cd: category.sel_koshu2_cd,
+              taisho1: r.taisho1 || "",
+              taisho2: "",
+              koji_naiyo: r.koji_naiyo || "",
+              basho: r.basho || "",
+              bui: r.bui || "",
+              zumen_suryo: "",
+              suryo,
+              tani: r.tani || "式",
+              tanka,
+              price,
+              ownerRate: 100,
+              tenantRate: 0,
+              ownerCost: price,
+              tenantCost: 0,
+              biko1: r.biko1 || "",
+              maker: "",
+              type: "",
+              comment: "",
+              rowState: "original",
+              source: "history"
+            };
+          });
+          setRows(presetRows);
+          setProjectInfo((prev) => ({
+            ...prev,
+            quoteNo: preset.quoteNo || prev.quoteNo,
+            estateName: preset.estateName || prev.estateName,
+            roomNo: preset.roomNo || prev.roomNo,
+            workTitle: preset.workTitle || prev.workTitle
+          }));
+          upsertCustomPresetsFromRows(presetRows);
+          setDataSourceMode("history");
+          setExportStatus(`已载入历史預設：${preset.label}（${presetRows.length}行）`);
+        };
+
+        const resetToBlank = () => {
+          setRows([]);
+          setDataSourceMode("blank");
+          setExportStatus("已切换为空白新建模式。");
+        };
+
+        const getFieldValueFromDoc = (doc, field, idx) => {
+          const el = doc.querySelector(`[name="${field}[${idx}]"]`);
+          if (!el) return "";
+          if (el.tagName === "SELECT") {
+            return el.value || (el.options?.[el.selectedIndex]?.value ?? "");
+          }
+          return el.value ?? el.getAttribute("value") ?? "";
+        };
+
+        /** 与 scripts/run-haseko-sort-engine.mjs / haseko_quote_sort_engine.py 同构 */
+        const KOUSHU2_META_ENGINE = {
+          1: { label: "クロス工事" },
+          2: { label: "床工事" },
+          3: { label: "建具工事" },
+          4: { label: "鋼製建具工事(廃止)" },
+          5: { label: "クリーニング工事" },
+          6: { label: "鍵工事" },
+          7: { label: "和室工事" },
+          8: { label: "塗装工事" },
+          9: { label: "雑工事" },
+          10: { label: "設備機器交換工事" },
+          11: { label: "内装工事(廃止)" },
+          12: { label: "必須工事" },
+          13: { label: "固定工事" },
+          14: { label: "設備点検(廃止)" },
+          15: { label: "その他(廃止)" },
+          16: { label: "交換工事" },
+          17: { label: "アスベスト関連" }
+        };
+        const KOUSHU2_SORT_ORDER_ENGINE = [
+          "1",
+          "2",
+          "3",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "12",
+          "13",
+          "16",
+          "17",
+          "4",
+          "11",
+          "14",
+          "15"
+        ];
+
+        const koushuSortKeyEngine = (cd) => {
+          const i = KOUSHU2_SORT_ORDER_ENGINE.indexOf(cd);
+          return i < 0 ? [999, cd] : [i, cd];
+        };
+
+        const decEngine = (s) => {
+          const t = String(s ?? "")
+            .trim()
+            .replace(/[,，\s]/g, "");
+          if (!t) return 0;
+          const n = Number(t);
+          return Number.isFinite(n) ? n : 0;
+        };
+
+        const COLMAP_ENGINE = {
+          taisho1: "C",
+          taisho2: "D",
+          basho: "E",
+          bui: "F",
+          zumen_suryo: "G",
+          suryo: "H",
+          tani: "I",
+          tanka: "J",
+          kakaku: "K",
+          koji_naiyo: "B"
+        };
+
+        const buildHasekoEnginePayload = (doc) => {
+          const rowKbnEls = Array.from(doc.querySelectorAll('[name^="row_kbn["]'));
+          const indexes = rowKbnEls
+            .map((el) => {
+              const m = el.getAttribute("name")?.match(/\[(\d+)\]/);
+              return m ? Number(m[1]) : null;
+            })
+            .filter((v) => Number.isFinite(v))
+            .sort((a, b) => a - b);
+
+          const rawRows = [];
+          for (const idx of indexes) {
+            const row_kbn = getFieldValueFromDoc(doc, "row_kbn", idx);
+            if (!row_kbn) continue;
+            rawRows.push({
+              row_index: idx,
+              row_kbn,
+              row_no: getFieldValueFromDoc(doc, "row_no", idx),
+              koshu1_text: getFieldValueFromDoc(doc, "koshu1_text", idx),
+              sel_koshu2_cd: getFieldValueFromDoc(doc, "sel_koshu2_cd", idx),
+              koshu2_text: getFieldValueFromDoc(doc, "koshu2_text", idx),
+              koshu2_cd: getFieldValueFromDoc(doc, "koshu2_cd", idx),
+              kojikomoku_id: getFieldValueFromDoc(doc, "kojikomoku_id", idx),
+              taisho1: getFieldValueFromDoc(doc, "taisho1", idx),
+              taisho2: getFieldValueFromDoc(doc, "taisho2", idx),
+              koji_naiyo: getFieldValueFromDoc(doc, "koji_naiyo", idx),
+              basho: getFieldValueFromDoc(doc, "basho", idx),
+              bui: getFieldValueFromDoc(doc, "bui", idx),
+              zumen_suryo: getFieldValueFromDoc(doc, "zumen_suryo", idx),
+              suryo: getFieldValueFromDoc(doc, "suryo", idx),
+              tani: getFieldValueFromDoc(doc, "tani", idx),
+              tanka: getFieldValueFromDoc(doc, "tanka", idx),
+              kakaku: getFieldValueFromDoc(doc, "kakaku", idx),
+              biko1: getFieldValueFromDoc(doc, "biko1", idx),
+              comment: getFieldValueFromDoc(doc, "comment", idx)
+            });
+          }
+
+          let currentKoshu1 = "";
+          let currentKoshu2Cd = "";
+          let currentKoshu2Text = "";
+          let currentKoshu2CdHidden = "";
+          const details = [];
+          const comments = [];
+
+          for (const r of rawRows) {
+            if (r.row_kbn === "1") {
+              currentKoshu1 = r.koshu1_text;
+              continue;
+            }
+            if (r.row_kbn === "2") {
+              currentKoshu2Text = r.koshu2_text;
+              currentKoshu2CdHidden = r.koshu2_cd;
+              currentKoshu2Cd = r.sel_koshu2_cd || r.koshu2_cd;
+              continue;
+            }
+            if (r.row_kbn === "4") {
+              if (r.comment.trim()) comments.push({ row_index: r.row_index, comment: r.comment.trim() });
+              continue;
+            }
+            if (r.row_kbn !== "3") continue;
+
+            const cd = r.sel_koshu2_cd || currentKoshu2Cd || currentKoshu2CdHidden || "0";
+            const label = KOUSHU2_META_ENGINE[cd]?.label || `unknown(${cd})`;
+            const fields = {
+              koshu1_text: currentKoshu1,
+              koshu2_text: currentKoshu2Text,
+              koshu2_cd: currentKoshu2CdHidden,
+              sel_koshu2_cd: cd,
+              kojikomoku_id: String(r.kojikomoku_id || "").trim(),
+              taisho1: r.taisho1,
+              taisho2: r.taisho2,
+              koji_naiyo: r.koji_naiyo,
+              basho: r.basho,
+              bui: r.bui,
+              zumen_suryo: r.zumen_suryo,
+              suryo: r.suryo,
+              tani: r.tani,
+              tanka: r.tanka,
+              kakaku: r.kakaku,
+              biko1: r.biko1
+            };
+            details.push({
+              bucket_cd: cd,
+              bucket_label: label,
+              source_row_index: r.row_index,
+              row_no: r.row_no,
+              kojikomoku_id: fields.kojikomoku_id,
+              fields
+            });
+          }
+
+          const sorted = [...details].sort((a, b) => {
+            const [ia, sa] = koushuSortKeyEngine(a.bucket_cd);
+            const [ib, sb] = koushuSortKeyEngine(b.bucket_cd);
+            if (ia !== ib) return ia - ib;
+            if (sa !== sb) return sa.localeCompare(sb);
+            return a.source_row_index - b.source_row_index;
+          });
+
+          const startRow = 15;
+          const koumoku_rows = sorted.map((d, i) => {
+            const rnum = startRow + i;
+            const cells = {};
+            for (const [fname, col] of Object.entries(COLMAP_ENGINE)) {
+              const val = d.fields[fname] ?? "";
+              cells[`${col}${rnum}`] = String(val).trim();
+            }
+            return {
+              logical_row: i + 1,
+              excel_data_row: rnum,
+              bucket_cd: d.bucket_cd,
+              kojikomoku_id: d.kojikomoku_id,
+              cells,
+              raw_fields: d.fields
+            };
+          });
+
+          let subtotal = 0;
+          const moneyLines = [];
+          for (const d of sorted) {
+            const suryo = decEngine(d.fields.suryo);
+            const tanka = decEngine(d.fields.tanka);
+            let kakaku = decEngine(d.fields.kakaku);
+            if (!kakaku && suryo && tanka) kakaku = Math.round(suryo * tanka);
+            subtotal += kakaku;
+            moneyLines.push({ bucket_cd: d.bucket_cd, kojikomoku_id: d.kojikomoku_id, amount: String(kakaku) });
+          }
+          const six = Math.round(subtotal * 0.06);
+          const tenBase = subtotal + six;
+          const ten = Math.round(tenBase * 0.1);
+
+          return {
+            meta: {
+              engine: "browser Haseko sort engine (parity with scripts/run-haseko-sort-engine.mjs)",
+              excel_column_map_hypothesis: COLMAP_ENGINE,
+              data_start_row_hypothesis: startRow
+            },
+            koumoku_rows,
+            money: {
+              subtotal_construction: String(subtotal),
+              suggested_shokeihi_6pct: String(six),
+              suggested_taxable_before_10pct: String(tenBase),
+              suggested_consumption_tax_10pct: String(ten),
+              lines: moneyLines
+            },
+            parse: {
+              raw_row_count: rawRows.length,
+              detail_count: sorted.length,
+              comments
+            },
+            raw_rows_debug: rawRows.slice(0, 40)
+          };
+        };
+
+        const runHasekoEngineOnSelectedHtml = async () => {
+          if (!historyHtmlFile) {
+            setExportStatus("请先选择上面的见积登录 HTML 文件。");
+            return;
+          }
+          try {
+            const text = await historyHtmlFile.text();
+            const doc = new DOMParser().parseFromString(text, "text/html");
+            const payload = buildHasekoEnginePayload(doc);
+            setEnginePayload(payload);
+            setEngineResultText(JSON.stringify(payload, null, 2));
+            setEngineSummary({
+              raw: payload.parse.raw_row_count,
+              details: payload.parse.detail_count,
+              subtotal: payload.money.subtotal_construction,
+              shokeihi: payload.money.suggested_shokeihi_6pct,
+              tax: payload.money.suggested_consumption_tax_10pct
+            });
+            setExportStatus(`分拣引擎：${payload.parse.detail_count} 条明細 · 小计 ¥${payload.money.subtotal_construction}（结果在下方）`);
+            document.getElementById("section-haseko-engine")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          } catch (e) {
+            setExportStatus(`分拣引擎失败：${e.message}`);
+          }
+        };
+
+        const downloadEngineJson = () => {
+          if (!engineResultText) return;
+          const blob = new Blob([engineResultText], { type: "application/json;charset=utf-8" });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "koumoku_engine_result.json";
+          a.click();
+          URL.revokeObjectURL(a.href);
+        };
+
+        const inferCategoryByKoshu = (koshu1Text, koshu2Text, taisho1) => {
+          const sourceText = [koshu1Text, koshu2Text, taisho1].filter(Boolean).join(" ");
+          const match = CATEGORY_DEFS.find((c) =>
+            [c.label, c.koshu1_text, c.koshu2_text].some((k) => sourceText.includes(k) || k.includes(sourceText))
+          );
+          if (match) return match.id;
+          if (/クロス|壁纸|壁/.test(sourceText)) return "wallpaper";
+          if (/設備|便座|水栓|換気|エアコン/.test(sourceText)) return "equipment";
+          if (/クリーニング|清掃/.test(sourceText)) return "cleaning";
+          if (/鍵/.test(sourceText)) return "security";
+          return "misc";
+        };
+
+        const importHistoryHtml = async () => {
+          if (!historyHtmlFile) {
+            setExportStatus("请先选择历史見積登録 HTML 文件。");
+            return;
+          }
+          try {
+            const text = await historyHtmlFile.text();
+            const doc = new DOMParser().parseFromString(text, "text/html");
+            const rowKbnEls = Array.from(doc.querySelectorAll('[name^="row_kbn["]'));
+            const indexes = rowKbnEls
+              .map((el) => {
+                const m = el.getAttribute("name")?.match(/\[(\d+)\]/);
+                return m ? Number(m[1]) : null;
+              })
+              .filter((v) => Number.isFinite(v))
+              .sort((a, b) => a - b);
+
+            let currentKoshu1 = "";
+            let currentKoshu2 = "";
+            let currentSelKoshu2Cd = "";
+            const importedRows = [];
+            const comments = [];
+
+            indexes.forEach((idx) => {
+              const rowKbn = getFieldValueFromDoc(doc, "row_kbn", idx);
+              if (rowKbn === "1") {
+                currentKoshu1 = getFieldValueFromDoc(doc, "koshu1_text", idx);
+                return;
+              }
+              if (rowKbn === "2") {
+                currentKoshu2 = getFieldValueFromDoc(doc, "koshu2_text", idx);
+                currentSelKoshu2Cd = getFieldValueFromDoc(doc, "sel_koshu2_cd", idx);
+                return;
+              }
+              if (rowKbn === "4") {
+                const c = getFieldValueFromDoc(doc, "comment", idx);
+                if (c && c.trim()) comments.push(c.trim());
+                return;
+              }
+              if (rowKbn !== "3") return;
+
+              const taisho1 = getFieldValueFromDoc(doc, "taisho1", idx);
+              const categoryId = inferCategoryByKoshu(currentKoshu1, currentKoshu2, taisho1);
+              const category = CATEGORY_DEFS.find((c) => c.id === categoryId) || CATEGORY_DEFS[0];
+
+              const suryo = Number(getFieldValueFromDoc(doc, "suryo", idx) || 0);
+              const tanka = Number(getFieldValueFromDoc(doc, "tanka", idx) || 0);
+              const kakaku = Number(getFieldValueFromDoc(doc, "kakaku", idx) || Math.round(suryo * tanka));
+              const ownerRate = Number(getFieldValueFromDoc(doc, "kashinushi_futan_wariai", idx) || 0);
+              const ownerCost = Number(getFieldValueFromDoc(doc, "kashinushi_futan_kingaku", idx) || 0);
+              const tenantRate = Number(getFieldValueFromDoc(doc, "karinushi_futan_wariai", idx) || 0);
+              const tenantCost = Number(getFieldValueFromDoc(doc, "karinushi_futan_kingaku", idx) || 0);
+
+              importedRows.push({
+                id: crypto.randomUUID(),
+                categoryId: category.id,
+                koshu1_text: currentKoshu1 || category.koshu1_text,
+                koshu2_text: currentKoshu2 || category.koshu2_text,
+                koshu2_koban: "",
+                sel_koshu2_cd: currentSelKoshu2Cd || category.sel_koshu2_cd,
+                taisho1: category.id === "wallpaper" ? normalizeWallpaperName(taisho1) : taisho1,
+                taisho2: getFieldValueFromDoc(doc, "taisho2", idx),
+                koji_naiyo: getFieldValueFromDoc(doc, "koji_naiyo", idx),
+                basho: getFieldValueFromDoc(doc, "basho", idx),
+                bui: getFieldValueFromDoc(doc, "bui", idx),
+                zumen_suryo: getFieldValueFromDoc(doc, "zumen_suryo", idx),
+                suryo,
+                tani: getFieldValueFromDoc(doc, "tani", idx),
+                tanka,
+                price: kakaku,
+                ownerRate,
+                tenantRate,
+                ownerCost,
+                tenantCost,
+                biko1: getFieldValueFromDoc(doc, "biko1", idx),
+                maker: getFieldValueFromDoc(doc, "maker", idx),
+                type: getFieldValueFromDoc(doc, "type", idx),
+                comment: "",
+                rowState: "original",
+                source: "history-html"
+              });
+            });
+
+            setRows(importedRows);
+            if (comments.length > 0) {
+              setProjectInfo((prev) => ({
+                ...prev,
+                memo: prev.memo ? `${prev.memo}\n${comments.join("\n")}` : comments.join("\n")
+              }));
+            }
+            upsertCustomPresetsFromRows(importedRows);
+            setDataSourceMode("history");
+            setTimeout(() => scrollToSection("section-grid"), 80);
+            setExportStatus(`历史HTML：已导入 ${importedRows.length} 条（备注 +${comments.length}）。已滚到明細。`);
+          } catch (e) {
+            setExportStatus(`历史HTML导入失败：${e.message}`);
+          }
+        };
+
+        const importChumonMeisai = async () => {
+          if (!chumonXlsxFile) {
+            setExportStatus("请先选择注文明細 .xlsx 文件。");
+            return;
+          }
+          try {
+            const buf = await chumonXlsxFile.arrayBuffer();
+            if (typeof XLSX === "undefined" || !XLSX.read) {
+              throw new Error("XLSX 未加载");
+            }
+            const wb = XLSX.read(buf, { type: "array", cellDates: true, raw: false });
+            const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" });
+            const { ok, rows: rawRows } = parseChumonMeisaiUbixAoa(aoa);
+            if (!ok || !rawRows.length) {
+              setExportStatus("未从注文明細中解析到クロス张替行：请确认版式为ユービックス（列2/13/17/40）且含「1」「クロス」块。");
+              return;
+            }
+            const category = CATEGORY_DEFS.find((c) => c.id === "wallpaper") || CATEGORY_DEFS[0];
+            const importedRows = rawRows.map((r) => ({
+              id: crypto.randomUUID(),
+              categoryId: r.categoryId,
+              koshu1_text: r.koshu1_text,
+              koshu2_text: r.koshu2_text,
+              koshu2_koban: r.koshu2_koban || "",
+              sel_koshu2_cd: category.sel_koshu2_cd,
+              taisho1: normalizeWallpaperName(r.taisho1),
+              taisho2: "",
+              koji_naiyo: r.koji_naiyo || "",
+              basho: r.basho,
+              bui: r.bui,
+              zumen_suryo: "",
+              suryo: r.suryo,
+              tani: r.tani,
+              tanka: r.tanka,
+              price: r.price,
+              ownerRate: r.ownerRate,
+              tenantRate: r.tenantRate,
+              ownerCost: r.ownerCost,
+              tenantCost: r.tenantCost,
+              biko1: r.biko1,
+              maker: r.maker || "",
+              type: "",
+              comment: "",
+              rowState: "new",
+              source: "chumon-ubix"
+            }));
+            setRows(importedRows);
+            upsertCustomPresetsFromRows(importedRows);
+            setDataSourceMode("history");
+            setTimeout(() => scrollToSection("section-grid"), 80);
+            setExportStatus(`注文明細导入成功：${importedRows.length} 条明细。顶栏可生成見積xlsx 或下滚查看プレビュー。`);
+          } catch (e) {
+            setExportStatus(`注文明細导入失败：${e.message}`);
+          }
+        };
+
+        const subtotalMap = activeRows.reduce((acc, row) => {
+          acc[row.categoryId] = (acc[row.categoryId] || 0) + Number(row.price || 0);
+          return acc;
+        }, {});
+
+        const totalPrice = activeRows.reduce((sum, row) => sum + Number(row.price || 0), 0);
+        const ownerTotal = activeRows.reduce((sum, row) => sum + Number(row.ownerCost || 0), 0);
+        const tenantTotal = activeRows.reduce((sum, row) => sum + Number(row.tenantCost || 0), 0);
+        const overhead = Math.round((totalPrice * Number(costRules.overheadRate || 0)) / 100);
+        const middleTotal = totalPrice + overhead;
+        const discount = -(middleTotal % 1000);
+        const quoteTotal = middleTotal + discount;
+        const tax = Math.round((quoteTotal * Number(costRules.taxRate || 0)) / 100);
+        const grandTotal = quoteTotal + tax;
+        const groupedForSheet = CATEGORY_DEFS.map((cat) => ({
+          ...cat,
+          rows: activeRows.filter((r) => r.categoryId === cat.id)
+        })).filter((g) => g.rows.length > 0);
+        const hasekoPaperRows = buildHasekoStyleDetailAoa(activeRows, projectInfo);
+        const crossStartIdx = hasekoPaperRows.findIndex((r) => /クロス貼替工事/.test(String(r?.[1] || "")));
+        const crossDetailRows =
+          crossStartIdx >= 0
+            ? hasekoPaperRows
+                .slice(crossStartIdx, crossStartIdx + 40)
+                .filter((r, i) => i === 0 || String(r?.[1] || "").trim() !== "")
+            : [];
+
+        const gridUi = {
+          compact: {
+            tableMinWidth: "min-w-[1300px]",
+            thPad: "p-1",
+            tdPad: "p-1",
+            inputH: "h-7",
+            textSize: "text-sm"
+          },
+          standard: {
+            tableMinWidth: "min-w-[1400px]",
+            thPad: "p-1.5",
+            tdPad: "p-1.5",
+            inputH: "h-8",
+            textSize: "text-base"
+          },
+          roomy: {
+            tableMinWidth: "min-w-[1500px]",
+            thPad: "p-2",
+            tdPad: "p-2",
+            inputH: "h-10",
+            textSize: "text-base"
+          }
+        }[gridDensity];
+
+        const buildExportRows = () => {
+          const grouped = activeRows.reduce((acc, row) => {
+            if (!acc[row.categoryId]) acc[row.categoryId] = [];
+            acc[row.categoryId].push(row);
+            return acc;
+          }, {});
+
+          const output = [];
+          Object.entries(grouped).forEach(([categoryId, groupRows]) => {
+            const def = CATEGORY_DEFS.find((c) => c.id === categoryId);
+            output.push({
+              row_kbn: "1",
+              koshu1_text: def.koshu1_text
+            });
+            output.push({
+              row_kbn: "2",
+              koshu2_koban: "",
+              sel_koshu2_cd: def.sel_koshu2_cd,
+              koshu2_text: def.koshu2_text
+            });
+            groupRows.forEach((r) => {
+              const meisai = {
+                row_kbn: "3",
+                taisho1: r.taisho1,
+                taisho2: r.taisho2,
+                koji_naiyo: r.koji_naiyo,
+                basho: r.basho,
+                bui: r.bui,
+                zumen_suryo: r.zumen_suryo,
+                suryo: String(r.suryo),
+                tani: r.tani,
+                tanka: String(r.tanka),
+                kakaku: String(r.price),
+                kashinushi_futan_wariai: Number(r.ownerRate || 0).toFixed(2),
+                kashinushi_futan_kingaku: String(r.ownerCost || 0),
+                karinushi_futan_wariai: Number(r.tenantRate || 0).toFixed(2),
+                karinushi_futan_kingaku: String(r.tenantCost || 0),
+                biko1: r.biko1,
+                maker: r.maker,
+                type: r.type,
+                comment: r.comment
+              };
+              output.push(meisai);
+              if (r.comment && String(r.comment).trim()) {
+                output.push({
+                  row_kbn: "4",
+                  comment: String(r.comment).trim()
+                });
+              }
+            });
+          });
+          return output;
+        };
+
+        const validateExportRows = (dataRows) => {
+          const errors = [];
+          dataRows.forEach((row, index) => {
+            const rowNo = index + 1;
+            if (!row.row_kbn) {
+              errors.push(`第${rowNo}行缺少 row_kbn`);
+              return;
+            }
+            if (row.row_kbn === "1" && !row.koshu1_text) errors.push(`第${rowNo}行(row_kbn=1)缺少 koshu1_text`);
+            if (row.row_kbn === "2" && !row.koshu2_text) errors.push(`第${rowNo}行(row_kbn=2)缺少 koshu2_text`);
+            if (row.row_kbn === "3") {
+              ["taisho1", "suryo", "tani", "tanka", "kakaku"].forEach((key) => {
+                if (row[key] === undefined || row[key] === null || String(row[key]).trim() === "") {
+                  errors.push(`第${rowNo}行(row_kbn=3)缺少 ${key}`);
+                }
+              });
+            }
+            if (row.row_kbn === "4" && (!row.comment || !String(row.comment).trim())) {
+              errors.push(`第${rowNo}行(row_kbn=4)缺少 comment`);
+            }
+          });
+          return errors;
+        };
+
+        const exportValidationReport = () => {
+          const exportRows = buildExportRows();
+          const errors = validateExportRows(exportRows);
+          const report = {
+            generatedAt: new Date().toISOString(),
+            summary: {
+              totalRows: exportRows.length,
+              errorCount: errors.length,
+              status: errors.length ? "failed" : "passed"
+            },
+            errors,
+            previewRows: exportRows.slice(0, 30)
+          };
+          setValidationErrors(errors);
+          setExportStatus(errors.length ? `自检完成：发现 ${errors.length} 个问题` : "自检通过：未发现字段问题");
+          download(`${buildProjectFileBaseName()}_validation_report.json`, JSON.stringify(report, null, 2), "application/json");
+        };
+
+        const download = (name, content, mime) => {
+          const blob = new Blob([content], { type: mime });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = name;
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+
+        const sanitizeFileName = (name) => String(name || "").replace(/[\\/:*?"<>|]/g, "_").trim();
+
+        const buildProjectFileBaseName = () => {
+          const base = [projectInfo.estateName, projectInfo.roomNo, projectInfo.workTitle]
+            .map((v) => String(v || "").trim())
+            .filter(Boolean)
+            .join(" ");
+          return sanitizeFileName(base || "見積書");
+        };
+
+        const exportJson = () => {
+          const exportRows = buildExportRows();
+          const errors = validateExportRows(exportRows);
+          if (errors.length) {
+            setValidationErrors(errors);
+            setExportStatus(`导出失败：${errors[0]}（共${errors.length}个问题）`);
+            return;
+          }
+          const payload = {
+            version: "1.0",
+            meta: {
+              quoteNo: projectInfo.quoteNo || "",
+              mitsumori_name: projectInfo.workTitle || "",
+              mitsumori_bi: projectInfo.createdAt || ""
+            },
+            rows: exportRows,
+            totals: {
+              keihi_wariai: String(costRules.overheadRate ?? ""),
+              nebiki_kbn: "3",
+              nebiki_chi: String(Math.abs(discount))
+            }
+          };
+          setValidationErrors([]);
+          setExportStatus(`导出成功：${payload.rows.length} 行`);
+          download(`${buildProjectFileBaseName()}.json`, JSON.stringify(payload, null, 2), "application/json");
+        };
+
+        const exportTsv = () => {
+          const data = buildExportRows();
+          const errors = validateExportRows(data);
+          if (errors.length) {
+            setValidationErrors(errors);
+            setExportStatus(`导出失败：${errors[0]}（共${errors.length}个问题）`);
+            return;
+          }
+          const lines = [
+            EXPORT_HEADERS.join("\t"),
+            ...data.map((row) => EXPORT_HEADERS.map((key) => row[key] ?? "").join("\t"))
+          ];
+          setValidationErrors([]);
+          setExportStatus(`导出成功：${data.length} 行`);
+          download(`${buildProjectFileBaseName()}.tsv`, lines.join("\n"), "text/tab-separated-values;charset=utf-8");
+        };
+
+        const exportPreviewExcel = async () => {
+          // Keep 見積書Excel output identical to the user's template format.
+          await exportIntoTemplate();
+        };
+
+        const findFirstBlankRow = (sheet, startRow, checkColumnNumber) => {
+          let row = startRow;
+          while (row < startRow + 3000) {
+            const val = sheet.cell(row, checkColumnNumber).value();
+            if (val === null || val === undefined || String(val).trim() === "") return row;
+            row += 1;
+          }
+          return startRow;
+        };
+
+        const buildBackendStyledTemplateRecords = () => buildTemplateRecordsFromRows(activeRows);
+
+        const exportMitsumoriXlsxNoTemplate = () => {
+          try {
+            if (typeof XLSX === "undefined") {
+              setExportStatus("XLSX 未加载，无法无模板生成。");
+              return;
+            }
+            const name = `${sanitizeFileName(buildProjectFileBaseName())}_見積書.xlsx`;
+            const pack = buildMitsumoriWorkbookAoA(projectInfo, costRules, activeRows);
+            downloadMitsumoriXlsxFromAoA(pack.aoa, name, { merges: pack.merges, cols: pack.cols });
+            setExportStatus(`已生成長谷工式内訳見積：${name}（列区标签+天井/壁+合計欄品番可配）`);
+          } catch (e) {
+            setExportStatus(`无模板生成失败：${e.message || e}`);
+          }
+        };
+
+        /**
+         * 与「后端导出」同构：把分拣引擎产出的 cells（B–K 推断映射）写入模板。
+         * 优先工作表名「項目」，否则第 1 张表。若列错位请改 buildHasekoEnginePayload 内 COLMAP_ENGINE。
+         */
+        const exportEnginePayloadIntoTemplate = async () => {
+          if (!templateFile) {
+            setTemplateStatus(`请先选择固定模板文件：${REQUIRED_TEMPLATE_NAME}`);
+            return;
+          }
+          if (templateFile.name !== REQUIRED_TEMPLATE_NAME) {
+            setTemplateStatus(`模板文件名必须是 ${REQUIRED_TEMPLATE_NAME}，当前为 ${templateFile.name}`);
+            return;
+          }
+          if (!enginePayload?.koumoku_rows?.length) {
+            setTemplateStatus("请先在上方选择 HTML 并点「网页执行分拣」。");
+            return;
+          }
+          if (!window.XlsxPopulate) {
+            setTemplateStatus("模板引擎未加载，请刷新页面后重试。");
+            return;
+          }
+          try {
+            setTemplateStatus("正在把分拣结果写入模板（項目表）…");
+            const data = await templateFile.arrayBuffer();
+            const workbook = await window.XlsxPopulate.fromDataAsync(data);
+            let sheet = null;
+            try {
+              sheet = workbook.sheet("項目");
+            } catch {
+              /* ignore */
+            }
+            if (!sheet) sheet = workbook.sheet(0);
+            if (!sheet) {
+              setTemplateStatus("模板无可用工作表。");
+              return;
+            }
+            const setCellValue = (addr, val) => {
+              const s = String(val ?? "").trim();
+              const m = /^([A-Z]{1,3})(\d+)$/i.exec(addr);
+              if (!m) return;
+              const letters = m[1].toUpperCase();
+              /** 与 COLMAP 一致：G 図面数量、H 数量、J 単価、K 金額 → 尽量写入数值型 */
+              const isNumericCol = letters === "G" || letters === "H" || letters === "J" || letters === "K";
+              let write = s;
+              if (isNumericCol && s !== "") {
+                const n = Number(s.replace(/,/g, ""));
+                if (Number.isFinite(n)) write = n;
+              }
+              sheet.cell(addr).value(write);
+            };
+            let cellCount = 0;
+            enginePayload.koumoku_rows.forEach((row) => {
+              Object.entries(row.cells).forEach(([addr, val]) => {
+                setCellValue(addr, val);
+                cellCount += 1;
+              });
+            });
+            const blob = await workbook.outputAsync();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${buildProjectFileBaseName()}_項目灌入.xlsx`;
+            a.click();
+            URL.revokeObjectURL(url);
+            setTemplateStatus(
+              `已写入分拣引擎 ${enginePayload.koumoku_rows.length} 行、共 ${cellCount} 个单元格（优先表「項目」）。御見積書若含 =項目!… 公式会随动。`
+            );
+          } catch (error) {
+            setTemplateStatus(`分拣灌模板失败: ${error.message}`);
+          }
+        };
+
+        const exportIntoTemplate = async () => {
+          if (!templateFile) {
+            setTemplateStatus(`请先选择固定模板文件：${REQUIRED_TEMPLATE_NAME}`);
+            return;
+          }
+          if (templateFile.name !== REQUIRED_TEMPLATE_NAME) {
+            setTemplateStatus(`模板文件名必须是 ${REQUIRED_TEMPLATE_NAME}，当前为 ${templateFile.name}`);
+            return;
+          }
+          if (!window.XlsxPopulate) {
+            setTemplateStatus("模板引擎未加载，请刷新页面后重试。");
+            return;
+          }
+          try {
+            setTemplateStatus("正在填充模板...");
+            const data = await templateFile.arrayBuffer();
+            const workbook = await window.XlsxPopulate.fromDataAsync(data);
+            const sheet = workbook.sheet(0);
+            if (!sheet) {
+              setTemplateStatus("模板无可用工作表。");
+              return;
+            }
+
+            const records = buildBackendStyledTemplateRecords();
+
+            const rowStart = findFirstBlankRow(sheet, TEMPLATE_START_ROW, 1);
+            records.forEach((record, idx) => {
+              const rowNo = rowStart + idx;
+              sheet.cell(rowNo, 1).value(record.name);
+              sheet.cell(rowNo, 2).value(record.basho);
+              sheet.cell(rowNo, 3).value(record.bui);
+              sheet.cell(rowNo, 4).value(record.qty);
+              sheet.cell(rowNo, 5).value(record.unit);
+              sheet.cell(rowNo, 6).value(record.unitPrice);
+              sheet.cell(rowNo, 7).value(record.amount);
+              sheet.cell(rowNo, 8).value(record.ownerRate);
+              sheet.cell(rowNo, 9).value(record.ownerCost);
+              sheet.cell(rowNo, 10).value(record.tenantRate);
+              sheet.cell(rowNo, 11).value(record.tenantCost);
+              sheet.cell(rowNo, 12).value(record.note);
+            });
+
+            const blob = await workbook.outputAsync();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${buildProjectFileBaseName()}.xlsx`;
+            a.click();
+            URL.revokeObjectURL(url);
+            setTemplateStatus(`已写入 ${records.length} 条到模板空白行（起始行: ${rowStart}）。`);
+          } catch (error) {
+            setTemplateStatus(`导出失败: ${error.message}`);
+          }
+        };
+
+        return (
+          <div className="min-h-screen bg-zinc-50 pb-10">
+            <div className="no-print sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur">
+              <div className="mx-auto flex max-w-[1800px] flex-wrap items-center gap-2 px-4 py-2.5 sm:px-5">
+                <div className="mr-auto min-w-[220px]">
+                  <h1 className="text-sm font-semibold text-zinc-900">見積作成</h1>
+                  <p className="text-xs text-zinc-500">
+                    {activeRows.length} 行 · 税込 <span className="font-semibold tabular-nums text-zinc-900">{currency(grandTotal)}</span> 円
+                  </p>
+                </div>
+                <button type="button" onClick={() => scrollToSection("section-import")} className={uix.btnNav}>取込</button>
+                <button type="button" onClick={() => scrollToSection("section-grid")} className={uix.btnNav}>明細</button>
+                <button type="button" onClick={() => scrollToSection("section-preview")} className={uix.btnNav}>確認</button>
+                <button type="button" onClick={() => window.print()} className={uix.btnLine}>PDF</button>
+                <button type="button" onClick={exportMitsumoriXlsxNoTemplate} className={uix.btnMain}>生成xlsx</button>
+              </div>
+            </div>
+
+            <div className="mx-auto max-w-[1800px] space-y-4 px-4 py-4 sm:space-y-5 sm:px-5 sm:py-5">
+              <header className={`no-print overflow-hidden ${uix.card}`}>
+                <div className="flex items-center justify-between gap-2 border-b border-zinc-100/90 bg-zinc-50/50 px-4 py-3">
+                  <div>
+                    <h2 className="text-sm font-semibold text-zinc-900">案件信息</h2>
+                    <p className={uix.kicker}>见积抬头与税率（折叠后仍可快速改常用项）</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setProjectInfoExpanded((v) => !v)}
+                    className="shrink-0 rounded-lg px-2.5 py-1.5 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
+                  >
+                    {projectInfoExpanded ? "收起" : "展开更多"}
+                  </button>
+                </div>
+                {!projectInfoExpanded ? (
+                  <div className="grid grid-cols-1 gap-2.5 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                    <input className={uix.in} value={projectInfo.quoteNo} onChange={(e) => updateProjectInfo("quoteNo", e.target.value)} placeholder="見積No." />
+                    <input className={uix.in} value={projectInfo.estateName} onChange={(e) => updateProjectInfo("estateName", e.target.value)} placeholder="物件名" />
+                    <input className={uix.in} value={projectInfo.roomNo} onChange={(e) => updateProjectInfo("roomNo", e.target.value)} placeholder="号室" />
+                    <input className={uix.in} value={projectInfo.workTitle} onChange={(e) => updateProjectInfo("workTitle", e.target.value)} placeholder="工事名称" />
+                    <input className={uix.in} value={costRules.overheadRate} onChange={(e) => setCostRules((prev) => ({ ...prev, overheadRate: e.target.value }))} placeholder="諸経費率(%)" />
+                    <input className={uix.in} value={costRules.taxRate} onChange={(e) => setCostRules((prev) => ({ ...prev, taxRate: e.target.value }))} placeholder="税率(%)" />
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    <div className={`mb-2 ${uix.hLabel}`}>全字段</div>
+                    <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+                      <input className={uix.in} value={projectInfo.quoteNo} onChange={(e) => updateProjectInfo("quoteNo", e.target.value)} placeholder="見積No." />
+                      <input className={uix.in} value={projectInfo.estateName} onChange={(e) => updateProjectInfo("estateName", e.target.value)} placeholder="物件名" />
+                      <input className={uix.in} value={projectInfo.roomNo} onChange={(e) => updateProjectInfo("roomNo", e.target.value)} placeholder="号室" />
+                      <input className={uix.in} value={projectInfo.workTitle} onChange={(e) => updateProjectInfo("workTitle", e.target.value)} placeholder="工事名称" />
+                      <input className={uix.in} type="date" value={projectInfo.createdAt} onChange={(e) => updateProjectInfo("createdAt", e.target.value)} />
+                      <input className={uix.in} value={projectInfo.memo} onChange={(e) => updateProjectInfo("memo", e.target.value)} placeholder="備考（案件）" />
+                      <input className={uix.in} type="date" value={projectInfo.revisedAt} onChange={(e) => updateProjectInfo("revisedAt", e.target.value)} placeholder="再見積日" />
+                      <input className={uix.in} value={projectInfo.tantosha} onChange={(e) => updateProjectInfo("tantosha", e.target.value)} placeholder="担当者" />
+                      <input
+                        className={uix.in}
+                        value={projectInfo.crossSpecCode}
+                        onChange={(e) => updateProjectInfo("crossSpecCode", e.target.value)}
+                        placeholder="クロス合計欄品番 (例: SP2519)"
+                        title="无模板xlsx 中「クロス貼替工事」行の合計列に出すコード"
+                      />
+                      <input
+                        className={uix.in}
+                        value={projectInfo.boardRepairTanka}
+                        onChange={(e) => updateProjectInfo("boardRepairTanka", e.target.value)}
+                        placeholder="ボード補修+下地 単価(円) 空=出さない"
+                        title="空以外でクロス欄の末尾に 式×1 行を追記"
+                      />
+                      <input className={uix.in} value={costRules.overheadRate} onChange={(e) => setCostRules((prev) => ({ ...prev, overheadRate: e.target.value }))} placeholder="諸経費率(%)" />
+                      <input className={uix.in} value={costRules.taxRate} onChange={(e) => setCostRules((prev) => ({ ...prev, taxRate: e.target.value }))} placeholder="税率(%)" />
+                    </div>
+                  </div>
+                )}
+              </header>
+
+              <section id="section-import" className={`no-print scroll-mt-36 space-y-3 ${uix.card} p-4 sm:p-5`}>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-xs font-bold text-violet-700">1</span>
+                  <div>
+                    <h2 className="text-sm font-semibold text-zinc-900">数据来源</h2>
+                    <p className="text-xs text-zinc-500">预设或文件导入，结果与明細、プレビュー同页联动</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                  <div className="rounded-xl border border-zinc-200/70 bg-zinc-50/50 p-4">
+                    <div className={`mb-3 ${uix.hLabel}`}>快速开始</div>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                      <button
+                        onClick={resetToBlank}
+                        className={
+                          dataSourceMode === "blank"
+                            ? `${uix.btnDark} px-3`
+                            : `${uix.btnLine} px-3 font-semibold text-zinc-700`
+                        }
+                      >
+                        新建空白
+                      </button>
+                      <div className="flex min-w-0 flex-1 flex-col gap-2 sm:max-w-md sm:flex-row sm:items-stretch">
+                        <select
+                          value={selectedPresetId}
+                          onChange={(e) => setSelectedPresetId(e.target.value)}
+                          className={`${uix.in} !py-2 text-sm`}
+                        >
+                          <option value="">选择历史見積書预设</option>
+                          {HISTORICAL_PRESETS.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button onClick={loadHistoryPreset} className={`shrink-0 ${uix.btnLine} border-emerald-200/80 bg-emerald-50/80 text-emerald-900 hover:bg-emerald-100/80`}>
+                          载入
+                        </button>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-xs text-zinc-500">状态：{dataSourceMode === "history" ? "已载入 / 已导入" : "空白"}</p>
+                  </div>
+                  <div className="rounded-xl border border-violet-200/60 bg-gradient-to-b from-violet-50/80 to-white p-4">
+                    <div className={`mb-3 text-xs font-semibold text-violet-900`}>从文件</div>
+                    <div className="space-y-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input type="file" accept=".html,.htm" onChange={(e) => setHistoryHtmlFile(e.target.files?.[0] || null)} className="min-w-0 flex-1 text-sm file:mr-2 file:rounded-md file:border-0 file:bg-zinc-100 file:px-2 file:py-1.5 file:text-xs file:font-medium file:text-zinc-700" />
+                        <button onClick={importHistoryHtml} className={`shrink-0 ${uix.btnDark} min-h-0 py-2`}>
+                          HTML
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void runHasekoEngineOnSelectedHtml()}
+                          className={`shrink-0 rounded-md border border-teal-600 bg-teal-50 px-2.5 py-2 text-xs font-semibold text-teal-900 hover:bg-teal-100`}
+                        >
+                          网页执行分拣
+                        </button>
+                      </div>
+                      <p className="text-xs text-zinc-500">见积登录 HTML，row_kbn 结构 · 选同一文件后点「网页执行分拣」生成 JSON（与 Node 脚本一致）</p>
+                      <div id="section-haseko-engine" className="scroll-mt-8 rounded-lg border border-teal-200/80 bg-teal-50/50 p-3">
+                        <details className="mb-3 rounded-md border border-teal-100 bg-white/70 px-3 py-2 text-xs leading-relaxed text-teal-950">
+                          <summary className="cursor-pointer font-semibold text-teal-900">长谷工后端可能怎么做？（逆向推断）</summary>
+                          <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-teal-800/95">
+                            <li>
+                              浏览器把 <code className="rounded bg-teal-100/80 px-1">table#Costs</code> 全部以{" "}
+                              <code className="rounded bg-teal-100/80 px-1">name=&quot;field[i]&quot;</code> 提交（POST / 保存ドラフト）。
+                            </li>
+                            <li>服务端校验 <code className="rounded bg-teal-100/80 px-1">row_kbn</code> 与{" "}
+                              <code className="rounded bg-teal-100/80 px-1">kojikomoku_id</code>，写入见積ヘッダ・明細テーブル。</li>
+                            <li>
+                              导出时：用同型データ模型填充注册好的 Excel 模板（項目 Sheet 填行、御見積書 Sheet 用公式{" "}
+                              <code className="rounded bg-teal-100/80 px-1">=IF(項目!B15=&quot;&quot;,&quot;&quot;,…)</code> 拉取），或 SSRS
+                              / OpenXML 生成。
+                            </li>
+                            <li>本页「网页执行分拣」≈ ② 的结构化；「写入模板」≈ ③ 的客户端再现（列映射为推断，需与你的 模板.xlsx 对齐）。</li>
+                          </ol>
+                        </details>
+                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-teal-900">分拣引擎输出（項目表草案）</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => void exportEnginePayloadIntoTemplate()}
+                              disabled={!enginePayload?.koumoku_rows?.length}
+                              className="rounded border border-teal-600 bg-teal-600 px-2 py-1 text-xs font-semibold text-white disabled:opacity-40"
+                              title="需先在页面底部「高级」中选择 模板.xlsx"
+                            >
+                              灌入模板.xlsx
+                            </button>
+                            <button
+                              type="button"
+                              onClick={downloadEngineJson}
+                              disabled={!engineResultText}
+                              className="rounded border border-teal-300 bg-white px-2 py-1 text-xs font-medium text-teal-800 disabled:opacity-40"
+                            >
+                              下载 JSON
+                            </button>
+                          </div>
+                        </div>
+                        {engineSummary ? (
+                          <div className="mb-2 grid grid-cols-2 gap-1.5 text-xs sm:grid-cols-4">
+                            <div className="rounded bg-white/80 px-2 py-1 text-teal-950">Costs 行：{engineSummary.raw}</div>
+                            <div className="rounded bg-white/80 px-2 py-1 text-teal-950">明細：{engineSummary.details}</div>
+                            <div className="rounded bg-white/80 px-2 py-1 text-teal-950">小计：¥{engineSummary.subtotal}</div>
+                            <div className="rounded bg-white/80 px-2 py-1 text-teal-950">诸経費6%：¥{engineSummary.shokeihi}</div>
+                            <div className="rounded bg-white/80 px-2 py-1 text-teal-950">消费税10%（参考）：¥{engineSummary.tax}</div>
+                          </div>
+                        ) : (
+                          <p className="mb-2 text-xs text-teal-800/80">尚未执行。请先选择 HTML 再点「网页执行分拣」。</p>
+                        )}
+                        {engineResultText ? (
+                          <pre className="max-h-[min(50vh,28rem)] overflow-auto rounded border border-teal-100 bg-zinc-950 p-2.5 text-[10px] leading-relaxed text-emerald-100">
+                            {engineResultText}
+                          </pre>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input
+                          type="file"
+                          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                          onChange={(e) => setChumonXlsxFile(e.target.files?.[0] || null)}
+                          className="min-w-0 flex-1 text-sm file:mr-2 file:rounded-md file:border-0 file:bg-violet-100 file:px-2 file:py-1.5 file:text-xs file:font-medium file:text-violet-800"
+                        />
+                        <button onClick={importChumonMeisai} className={`shrink-0 ${uix.btnMain} min-h-0 py-2`}>
+                          注文明細
+                        </button>
+                      </div>
+                      <p className="text-xs text-zinc-500">列 2/13/17/40；导入后跳至明細</p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-zinc-400">行色：灰 原档 · 黄 已改 · 绿 新增 · 红 将删</p>
+              </section>
+              {exportStatus ? (
+                <div className="no-print pointer-events-none fixed bottom-5 left-1/2 z-[60] w-[min(100%-2rem,28rem)] -translate-x-1/2 px-0">
+                  <div className="pointer-events-auto rounded-2xl border border-zinc-700/20 bg-zinc-900 px-4 py-3 text-center text-sm text-zinc-50 shadow-2xl shadow-zinc-900/30">{exportStatus}</div>
+                </div>
+              ) : null}
+              {validationErrors.length > 0 ? (
+                <div className="no-print rounded-2xl border border-rose-200/80 bg-rose-50/90 p-4 text-sm text-rose-800 shadow-sm">
+                  <div className="mb-1.5 font-semibold">校验（前 10 条，可点击定位）</div>
+                  <ul className="list-disc pl-5">
+                    {validationErrors.slice(0, 10).map((e, i) => (
+                      <li key={`err-${i}`}>
+                        <button onClick={() => jumpToError(e)} className="text-left underline decoration-dotted">{e}</button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              <details className={`no-print scroll-mt-36 group ${uix.card} open:shadow-md`}>
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-t-2xl px-4 py-3 transition hover:bg-zinc-50/80 marker:hidden [&::-webkit-details-marker]:hidden">
+                  <span className="text-sm font-medium text-zinc-800">
+                    <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 text-xs font-semibold text-zinc-500">高级</span>
+                    公司强制模板需文件 {REQUIRED_TEMPLATE_NAME}
+                  </span>
+                  <span className="text-zinc-400 transition group-open:rotate-180">▾</span>
+                </summary>
+                <div className="border-t border-zinc-100 px-4 pb-4">
+                  <div className="mb-2 text-xs text-zinc-500">自第 {TEMPLATE_START_ROW} 行起找空白行写入</div>
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                    <input type="file" accept=".xlsx" onChange={(e) => setTemplateFile(e.target.files?.[0] || null)} className={uix.in} />
+                    <button onClick={exportIntoTemplate} className={uix.btnMain}>
+                      按公司模板导出
+                    </button>
+                  </div>
+                  {templateStatus ? <div className="mt-2 text-sm text-zinc-600">{templateStatus}</div> : null}
+                </div>
+              </details>
+
+              <div id="section-grid" className="scroll-mt-36 space-y-4 no-print">
+                <section className="rounded border border-slate-700 bg-white p-3">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="text-sm font-semibold text-slate-900">2) 分组式見積编辑</h2>
+                    <div className="text-xs text-slate-500">
+                      左：<span className="font-medium text-slate-700">工事一览</span> · 右：
+                      <span className="font-medium text-slate-700">工事</span>明細（当前选中工种）
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
+                    <aside className="flex w-full shrink-0 flex-col rounded-lg border border-slate-200 bg-slate-50/90 lg:w-[13.5rem]">
+                      <div className="border-b border-slate-200 bg-slate-100/80 px-2.5 py-2">
+                        <div className="text-[11px] font-bold uppercase tracking-wide text-slate-600">工事一览</div>
+                        <div className="mt-0.5 text-[10px] leading-snug text-slate-500">点击工种切换右侧编辑区</div>
+                      </div>
+                      <div className="max-h-[min(70vh,28rem)] overflow-y-auto px-1.5 py-1.5">
+                        <ul className="space-y-0.5">
+                          {CATEGORY_DEFS.map((cat) => {
+                            const n = activeRows.filter((r) => r.categoryId === cat.id).length;
+                            const focused = gridFocusCategory === cat.id;
+                            return (
+                              <li key={`nav-${cat.id}`}>
+                                <button
+                                  type="button"
+                                  onClick={() => setGridFocusCategory(cat.id)}
+                                  className={`flex w-full items-center justify-between gap-2 rounded-md border px-2 py-1.5 text-left text-[11px] transition ${
+                                    focused
+                                      ? "border-slate-400 bg-white font-semibold text-slate-900 shadow-sm"
+                                      : "border-transparent text-slate-700 hover:border-slate-200 hover:bg-white"
+                                  }`}
+                                >
+                                  <span className="min-w-0 truncate">{cat.label}</span>
+                                  <span className="shrink-0 tabular-nums text-slate-500">{n}</span>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                      <div className="mt-auto border-t border-slate-200 p-2">
+                        <button
+                          type="button"
+                          onClick={() => addCustomRowForCategory(gridFocusCategory)}
+                          className="w-full rounded border border-slate-400 bg-white py-1.5 text-[11px] font-semibold text-slate-800 hover:bg-slate-50"
+                        >
+                          ＋ 当前工种に行追加
+                        </button>
+                        <details className="mt-2 rounded border border-slate-200 bg-white px-2 py-1.5 text-[10px] text-slate-600">
+                          <summary className="cursor-pointer select-none font-medium text-slate-700">自定义常用</summary>
+                          <div className="mt-1 max-h-24 overflow-y-auto border-t border-slate-100 pt-1">
+                            {CATEGORY_DEFS.every((c) => !(customPresetMap[c.id] || []).length) ? (
+                              <span className="text-slate-400">无</span>
+                            ) : (
+                              CATEGORY_DEFS.flatMap((c) =>
+                                (customPresetMap[c.id] || []).map((p) => (
+                                  <div key={`${c.id}-${presetUniqueKey(p)}`} className="flex items-center justify-between gap-1 py-0.5">
+                                    <span className="min-w-0 truncate text-[10px]" title={`${c.label} · ${p.taisho1}`}>
+                                      {c.label.slice(0, 2)}·{p.taisho1}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      className="shrink-0 text-rose-600 hover:underline"
+                                      onClick={() => removeCustomPresetByKey(c.id, presetUniqueKey(p))}
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))
+                              )
+                            )}
+                          </div>
+                        </details>
+                      </div>
+                    </aside>
+
+                    <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-slate-700">
+                      {(() => {
+                        const cat = CATEGORY_DEFS.find((c) => c.id === gridFocusCategory) || CATEGORY_DEFS[0];
+                        const groupRows = activeRows.filter((r) => r.categoryId === gridFocusCategory);
+                        return (
+                          <>
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-300 bg-slate-100 px-3 py-2">
+                              <div className="text-sm font-semibold text-slate-900">工事</div>
+                              <div className="text-[11px] tabular-nums text-slate-600">
+                                {cat.label} · 小计 {currency(subtotalMap[gridFocusCategory] || 0)} 円 · {groupRows.length} 行
+                              </div>
+                            </div>
+                            {activeRows.length === 0 ? (
+                              <div className="px-3 py-10 text-center text-sm text-slate-500">暂无明细。请导入，或左侧选工种后点「行追加」。</div>
+                            ) : groupRows.length === 0 ? (
+                              <div className="px-3 py-10 text-center text-sm text-slate-500">
+                                当前工种尚无行。<button type="button" className="font-semibold text-slate-800 underline" onClick={() => addCustomRowForCategory(gridFocusCategory)}>
+                                  追加一行
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="overflow-x-auto">
+                                <table className="w-full min-w-[1200px] border-collapse text-[11px] leading-5">
+                                  <thead className="bg-slate-100">
+                                    <tr>
+                                      <th className="border border-slate-700 p-1.5">工种</th>
+                                      <th className="border border-slate-700 p-1.5">工事项</th>
+                                      <th className="border border-slate-700 p-1.5">場所</th>
+                                      <th className="border border-slate-700 p-1.5">部位</th>
+                                      <th className="border border-slate-700 p-1.5">数量</th>
+                                      <th className="border border-slate-700 p-1.5">单位</th>
+                                      <th className="border border-slate-700 p-1.5">单价</th>
+                                      <th className="border border-slate-700 p-1.5">金額</th>
+                                      <th className="border border-slate-700 p-1.5">備考</th>
+                                      <th className="border border-slate-700 p-1.5">操作</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {groupRows.map((row) => {
+                                      const rowClass = row.rowState === "modified" ? "bg-amber-50" : "bg-white";
+                                      const rowPresetOptions = availablePresetMap[row.categoryId] || [];
+                                      return (
+                                        <tr key={row.id} className={rowClass} data-row-id={row.id}>
+                                          <td className="border border-slate-700 p-1">
+                                            <select
+                                              className="h-7 w-full border border-slate-300 bg-white px-1 text-[11px]"
+                                              value={row.categoryId}
+                                              onChange={(e) => {
+                                                const v = e.target.value;
+                                                updateRow(row.id, "categoryId", v);
+                                                setGridFocusCategory(v);
+                                              }}
+                                            >
+                                              {CATEGORY_DEFS.map((d) => (
+                                                <option key={`cat-opt-${d.id}`} value={d.id}>
+                                                  {d.label}
+                                                </option>
+                                              ))}
+                                            </select>
+                                          </td>
+                                          <td className="border border-slate-700 p-1">
+                                            <input
+                                              className="h-7 w-full border border-slate-300 bg-white px-1 text-[11px]"
+                                              data-cell={`${row.id}:taisho1`}
+                                              list={`preset-dl-${row.id}`}
+                                              value={row.taisho1}
+                                              placeholder="工事项 / 可输入或从候选选"
+                                              onChange={(e) => updateRow(row.id, "taisho1", e.target.value)}
+                                            />
+                                            <datalist id={`preset-dl-${row.id}`}>
+                                              {rowPresetOptions.map((p) => (
+                                                <option key={`${row.categoryId}-${presetUniqueKey(p)}`} value={p.taisho1} />
+                                              ))}
+                                            </datalist>
+                                            <button
+                                              type="button"
+                                              className="mt-0.5 text-[10px] text-emerald-700 hover:underline"
+                                              onClick={() => saveRowAsCustomPreset(row)}
+                                            >
+                                              存常用
+                                            </button>
+                                          </td>
+                                          <td className="border border-slate-700 p-1">
+                                            <input className="h-7 w-full border border-slate-300 bg-white px-1 text-[11px]" value={row.basho} onChange={(e) => updateRow(row.id, "basho", e.target.value)} />
+                                          </td>
+                                          <td className="border border-slate-700 p-1">
+                                            <input className="h-7 w-full border border-slate-300 bg-white px-1 text-[11px]" value={row.bui} onChange={(e) => updateRow(row.id, "bui", e.target.value)} />
+                                          </td>
+                                          <td className="border border-slate-700 p-1">
+                                            <input className="h-7 w-full border border-slate-300 bg-white px-1 text-right text-[11px]" value={row.suryo} onChange={(e) => updateRow(row.id, "suryo", e.target.value)} />
+                                          </td>
+                                          <td className="border border-slate-700 p-1">
+                                            <input className="h-7 w-full border border-slate-300 bg-white px-1 text-center text-[11px]" value={row.tani} onChange={(e) => updateRow(row.id, "tani", e.target.value)} />
+                                          </td>
+                                          <td className="border border-slate-700 p-1">
+                                            <input className="h-7 w-full border border-slate-300 bg-white px-1 text-right text-[11px]" value={row.tanka} onChange={(e) => updateRow(row.id, "tanka", e.target.value)} />
+                                          </td>
+                                          <td className="border border-slate-700 p-1 text-right font-semibold">{currency(row.price)}</td>
+                                          <td className="border border-slate-700 p-1">
+                                            <input className="h-7 w-full border border-slate-300 bg-white px-1 text-[11px]" value={row.biko1} onChange={(e) => updateRow(row.id, "biko1", e.target.value)} />
+                                          </td>
+                                          <td className="border border-slate-700 p-1 text-center">
+                                            <button onClick={() => removeRow(row.id)} className="border border-slate-500 bg-white px-2 py-0.5 text-[11px] text-slate-700 hover:bg-slate-50">
+                                              删除
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <div id="section-preview" className="scroll-mt-36 space-y-2">
+                <div className="no-print flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-xs font-bold text-violet-800">3</span>
+                    <div>
+                      <h2 className="text-sm font-semibold text-zinc-900">御見積プレビュー</h2>
+                      <p className="text-xs text-zinc-500">与打印输出一致；可折叠以省屏</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPrintPreviewCollapsed((v) => !v)}
+                    className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
+                  >
+                    {printPreviewCollapsed ? "展开" : "折叠"}
+                  </button>
+                </div>
+                <section
+                  className={
+                    printPreviewCollapsed
+                      ? "print-sheet excel-sheet-bg excel-font hidden rounded-xl border border-slate-300/90 bg-white p-4 text-[12px] leading-5 text-slate-900 print:block md:p-6"
+                      : "print-sheet excel-sheet-bg excel-font rounded-xl border border-slate-300/90 bg-white p-4 text-[12px] leading-5 text-slate-900 shadow-sm md:p-6"
+                  }
+                >
+                  <div className="mb-2 text-right">No. {projectInfo.quoteNo || "-"}</div>
+                  <div className="mb-2 text-center text-3xl font-bold tracking-[0.45em]">御 見 積 書</div>
+                  <div className="mb-3 grid grid-cols-2 gap-2">
+                    <div>
+                      <div className="mb-1">株式会社長谷工ライブネット 御中</div>
+                      <div>下記の通りお見積致しました。何卒ご用命下さりますようお願い申し上げます。</div>
+                    </div>
+                    <div className="text-right">
+                      <div>見積日: {projectInfo.createdAt}</div>
+                      {projectInfo.revisedAt ? <div>再見積日: {projectInfo.revisedAt}</div> : null}
+                      <div className="mt-2 text-sm">見積金額（税込）</div>
+                      <div className="text-2xl font-bold">¥{currency(grandTotal)}-</div>
+                    </div>
+                  </div>
+
+                  <div className="mb-3 grid grid-cols-2 gap-4 border p-3">
+                    <div>
+                      <div className="font-semibold">株式会社ユービックス</div>
+                      <div>TEL: 03-6661-9011</div>
+                      <div>FAX: 03-6661-9012</div>
+                      <div>担当: {projectInfo.tantosha || "-"}</div>
+                    </div>
+                    <div>
+                      <div>物件名・号室: {projectInfo.estateName} {projectInfo.roomNo}</div>
+                      <div>工事名称: {projectInfo.workTitle}</div>
+                      <div>間取り: - / 面積: - / 坪数: -</div>
+                      <div>入居期間: - / その他: -</div>
+                    </div>
+                  </div>
+
+                  <div className="overflow-auto border border-slate-800 bg-white">
+                    <table className="w-full min-w-[720px] border-collapse text-[11px]">
+                      <thead>
+                        <tr>
+                          <th className="excel-cell excel-head">名称</th>
+                          <th className="excel-cell excel-head">場所</th>
+                          <th className="excel-cell excel-head">部位</th>
+                          <th className="excel-cell excel-head">数量</th>
+                          <th className="excel-cell excel-head">単位</th>
+                          <th className="excel-cell excel-head">単価</th>
+                          <th className="excel-cell excel-head">金額</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {groupedForSheet.flatMap((group) => [
+                          <tr key={`grp-${group.id}`}>
+                            <td className="excel-cell excel-subhead" colSpan="7">{group.label}</td>
+                          </tr>,
+                          ...group.rows.map((row) => (
+                            <tr key={`sheet-${row.id}`}>
+                              <td className="excel-cell">{row.taisho1 || row.koji_naiyo}</td>
+                              <td className="excel-cell">{row.basho}</td>
+                              <td className="excel-cell">{row.bui}</td>
+                              <td className="excel-cell text-right">{row.suryo}</td>
+                              <td className="excel-cell">{row.tani}</td>
+                              <td className="excel-cell text-right">{currency(row.tanka)}</td>
+                              <td className="excel-cell text-right">{currency(row.price)}</td>
+                            </tr>
+                          ))
+                        ])}
+                        {activeRows.length === 0 && (
+                          <tr>
+                            <td className="excel-cell p-4 text-center text-slate-500" colSpan="7">暂无明细</td>
+                          </tr>
+                        )}
+                        <tr>
+                          <td className="excel-cell excel-subhead" colSpan="6">小計</td>
+                          <td className="excel-cell text-right">{currency(totalPrice)}</td>
+                        </tr>
+                        <tr>
+                          <td className="excel-cell excel-subhead" colSpan="6">諸経費 {costRules.overheadRate}%</td>
+                          <td className="excel-cell text-right">{currency(overhead)}</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-slate-800 p-1.5 font-semibold" colSpan="6">中計</td>
+                          <td className="border border-slate-800 p-1.5 text-right">{currency(middleTotal)}</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-slate-800 p-1.5 font-semibold" colSpan="6">出精値引</td>
+                          <td className="border border-slate-800 p-1.5 text-right">{currency(discount)}</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-slate-800 p-1.5 font-semibold" colSpan="6">合計</td>
+                          <td className="border border-slate-800 p-1.5 text-right">{currency(quoteTotal)}</td>
+                        </tr>
+                        <tr>
+                          <td className="border border-slate-800 p-1.5 font-semibold" colSpan="6">消費税 {costRules.taxRate}%</td>
+                          <td className="border border-slate-800 p-1.5 text-right">{currency(tax)}</td>
+                        </tr>
+                        <tr>
+                          <td className="excel-cell excel-subhead text-lg font-bold" colSpan="6">総合計</td>
+                          <td className="excel-cell text-right text-lg font-bold">{currency(grandTotal)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {crossDetailRows.length > 0 ? (
+                    <div className="mt-4 w-full max-w-[900px] overflow-auto border border-slate-800 bg-white">
+                      <table className="w-full min-w-[760px] border-collapse text-[11px]">
+                        <thead>
+                          <tr>
+                            <th className="excel-cell excel-subhead">名称</th>
+                            <th className="excel-cell excel-subhead">天井</th>
+                            <th className="excel-cell excel-subhead">壁</th>
+                            <th className="excel-cell excel-subhead">単位</th>
+                            <th className="excel-cell excel-subhead">数量</th>
+                            <th className="excel-cell excel-subhead">単価</th>
+                            <th className="excel-cell excel-subhead">合計</th>
+                            <th className="excel-cell excel-subhead">備考</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {crossDetailRows.map((r, i) => (
+                            <tr key={`cross-paper-${i}`}>
+                              <td className="excel-cell">{r[1] || ""}</td>
+                              <td className="excel-cell text-right">{r[2] || ""}</td>
+                              <td className="excel-cell text-right">{r[3] || ""}</td>
+                              <td className="excel-cell">{r[4] || ""}</td>
+                              <td className="excel-cell text-right">{r[5] || ""}</td>
+                              <td className="excel-cell text-right">{r[6] ? currency(r[6]) : ""}</td>
+                              <td className="excel-cell text-right">{r[7] ? currency(r[7]) : ""}</td>
+                              <td className="excel-cell">{r[8] || ""}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-3 border p-2">
+                    <div>工期：お打合せにより</div>
+                    <div>見積有効期限：３ヶ月間</div>
+                    <div>精算状況：精算未合意</div>
+                  </div>
+
+                  <div className="mt-3">
+                    <div className="font-semibold">&lt;&lt;備考&gt;&gt;</div>
+                    <div className="min-h-20 border p-2 whitespace-pre-wrap">{projectInfo.memo || ""}</div>
+                  </div>
+                </section>
+                {printPreviewCollapsed ? <p className="no-print text-center text-xs text-zinc-400">画面上已隐藏；「打印 / PDF」仍会输出本区块。</p> : null}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>

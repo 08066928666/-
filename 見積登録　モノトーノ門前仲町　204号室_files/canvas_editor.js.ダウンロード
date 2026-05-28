@@ -1,0 +1,397 @@
+(function (window, $, fabric) {
+    var CanvasEditor = function (id, options) {
+        //キャンバス作成
+        this.canvas = new fabric.Canvas(id, {
+            backgroundColor: 'rgb(255,255,255)',
+            selection: false,
+            selectionBorderColor: 'transparent',
+            selectionColor: 'transparent',
+            hoverCursor: 'pointer'
+        });
+
+        //キャンバスサイズ
+        this.width = this.canvas.width;
+        this.height = this.canvas.height;
+        //モード
+        this.mode = 'show';
+        this.draw = '';
+        //表示中画像（jQueryオブジェクト)
+        this.$currImage = null;
+        //編集中オブジェクト
+        this.currObject = null;
+        //矢印オプション
+        this.arrowOptions = {
+            strokeWidth: 5,
+            fill: 'red',
+            stroke: 'red',
+            originX: 'center',
+            originY: 'center',
+            hasBorders: false,
+            hasControls: false,
+            selectable: false
+        };
+        this.circleOptions = {
+            strokeWidth: 5,
+            fill: 'transparent',
+            stroke: 'red',
+            hasBorders: false,
+            hasControls: false,
+            selectable: false
+        };
+
+        //編集履歴
+        this.states = [];
+        this.redoList = [];
+
+        //開始位置
+        this.startX;
+        this.startY;
+
+        //切抜き関連
+        this.cropRect = new fabric.Rect({
+            fill: 'rgba(0,0,0,0.2)',
+            originX: 'left',
+            originY: 'top',
+            stroke: '#ccc',
+            strokeDashArray: [2, 2],
+            opacity: 1,
+            width: 1,
+            height: 1,
+            cornerColor: 'red',
+            hasRotatingPoint: false
+        });
+        this.cropRect.setControlsVisibility({
+            mt: false, // middle top disable
+            mb: false, // midle bottom
+            ml: false, // middle left
+            mr: false, // I think you get it
+        });
+
+        var self = this;
+        //マウス操作開始
+        this.canvas.on('mouse:down', function (event) {
+            if (self.mode == 'draw') {
+                self.startX = event.e.offsetX;
+                self.startY = event.e.offsetY;
+                if (self.draw == 'arrow') {
+                    self.currObject = self.drawArrow([self.startX, self.startY, self.startX, self.startY]);
+                } else if (self.draw == 'circle') {
+                    self.currObject = self.drawCircle({
+                        left: self.startX,
+                        top: self.startY,
+                        radius: 0
+                    })
+                }
+                self.canvas.renderAll();
+            }
+        });
+
+        //マウス移動
+        this.canvas.on("mouse:move", function (event) {
+                var currX = event.e.offsetX;
+                var currY = event.e.offsetY;
+                if (self.mode == 'draw') {
+                    if (self.draw == 'arrow') {
+                        if (self.currObject) {
+                            self.currObject.set({
+                                x2: currX,
+                                y2: currY
+                            });
+                            self.currObject.setCoords();
+                        }
+                    } else if (self.draw == 'circle') {
+                        if (self.currObject) {
+                            var diffX = currX - self.startX;
+                            var diffY = currY - self.startY;
+                            var left = self.currObject.left;
+                            var top = self.currObject.top;
+                            if (diffX < 0) left = currX;
+                            if (diffY < 0) top = currY;
+                            self.currObject.set({
+                                left: left,
+                                top: top
+                            });
+                            diffX = Math.abs(diffX);
+                            diffY = Math.abs(diffY);
+                            if (diffX > diffY) {
+                                var radius = diffX / 2;
+                                self.currObject.set({
+                                    scaleX: 1,
+                                    scaleY: diffY / diffX,
+                                    radius: radius
+                                });
+                            } else {
+                                var radius = diffY / 2;
+                                self.currObject.set({
+                                    scaleX: diffX / diffY,
+                                    scaleY: 1,
+                                    radius: radius
+                                });
+                            }
+
+                            self.currObject.setCoords();
+                        }
+                    }
+                    self.canvas.renderAll();
+                }
+            }
+        );
+
+        //マウス操作終了
+        this.canvas.on("mouse:up", function (event) {
+            if (self.mode == 'draw') {
+                if (self.draw == 'arrow') {
+                    //確定時に再描画
+                    self.canvas.remove(self.currObject);
+                    self.canvas.renderAll();
+                    self.canvas.add(self.drawArrow([self.currObject.x1, self.currObject.y1, self.currObject.x2, self.currObject.y2]));
+
+                    //イベント発火
+                    $(self).trigger('arrow.end');
+                } else if (self.draw == 'circle') {
+                    //確定時に再描画
+                    self.canvas.remove(self.currObject);
+                    self.canvas.add(self.drawCircle({
+                        left: self.currObject.left,
+                        top: self.currObject.top,
+                        radius: self.currObject.radius,
+                        scaleX: self.currObject.scaleX,
+                        scaleY: self.currObject.scaleY
+                    }));
+
+                    //イベント発火
+                    $(self).trigger('circle.end');
+                }
+                self.currObject = null;
+                self.canvas.renderAll();
+
+                //履歴追加
+                self.pushState();
+            }
+        });
+    }
+    CanvasEditor.prototype = {
+        //初期処理
+        init: function () {
+            this.setMode('show');
+            this.canvas.remove(this.cropRect);
+            this.canvas.clear().renderAll();
+            this.states = [];
+            this.redoList = [];
+        },
+        //画像ロード
+        load: function ($img) {
+            this.init();
+            this.$currImage = $img;
+            this.baseImage = $img.get(0);
+            var img = new fabric.Image(this.baseImage, {
+                selectable: false,
+                originX: 'left',
+                originY: 'top',
+                width: this.baseImage.naturalWidth,
+                height: this.baseImage.naturalHeight,
+            });
+            this.canvas.add(img);
+            this.setImageSize(img, 0, 0, img.width, img.height);
+            this.mainImage = img;
+
+            //履歴追加
+            this.pushState();
+        },
+        setImageSize: function (img, top, left, width, height) {
+            var imgRatio = width / height;
+            var scale = 1;
+            var orgScale = img.scaleX || 1;
+            if (imgRatio > 1) {
+                scale = img.scaleX * this.width / width;
+                // this.canvas.setWidth(this.width);
+                // this.canvas.setHeight(this.height / imgRatio);
+            } else {
+                scale = img.scaleY * this.height / height;
+                // this.canvas.setWidth(this.width * imgRatio);
+                // this.canvas.setHeight(this.height);
+            }
+            img.scale(scale);
+            img.top = ((img.top + top) / orgScale) * scale;
+            img.left = ((img.left + left) / orgScale) * scale;
+        },
+        cropStart: function () {
+            if (this.mode != 'crop') {
+                this.setMode('crop');
+                this.cropRect.left = 20;
+                this.cropRect.top = 20;
+                this.cropRect.width = this.canvas.getWidth() - 40;
+                this.cropRect.height = this.canvas.getHeight() - 40;
+                this.canvas.remove(this.cropRect);
+                this.canvas.add(this.cropRect);
+                this.canvas.setActiveObject(this.cropRect);
+                this.canvas.renderAll();
+                //イベント発火
+                $(this).trigger('crop.start');
+            }
+        },
+        cropImage: function () {
+            var cropWidth = this.cropRect.getScaledWidth();
+            var cropHeight = this.cropRect.getScaledHeight();
+            var cropTop = -1 * this.cropRect.top;
+            var cropLeft = -1 * this.cropRect.left;
+            this.setImageSize(this.mainImage, cropTop, cropLeft, cropWidth, cropHeight);
+            this.canvas.remove(this.cropRect);
+            this.canvas.renderAll();
+
+            //履歴追加
+            this.pushState();
+
+            this.setMode('show');
+
+            //イベント発火
+            $(this).trigger('crop.end');
+        },
+        cropCancel: function () {
+            this.setMode('show');
+        },
+        //矢印関連
+        arrowStart: function () {
+            if (this.mode != 'crop') {
+                this.setMode('draw', 'arrow');
+
+                //イベント発火
+                $(this).trigger('arrow.start');
+            }
+        },
+        drawArrow: function (points) {
+            var arrow = new fabric.Arrow(points, this.arrowOptions);
+            this.canvas.add(arrow);
+            return arrow;
+        },
+        setArrowOption: function (key, val) {
+            if (typeof key === 'object') {
+                this.arrowOptions = $.extend(this.arrowOptions, key);
+            } else {
+                this.arrowOptions[key] = val;
+            }
+        },
+        //丸関連
+        circleStart: function () {
+            if (this.mode != 'crop') {
+                this.setMode('draw', 'circle');
+
+                //イベント発火
+                $(this).trigger('circle.start');
+            }
+        },
+        drawCircle: function (option) {
+            var setting = $.extend(this.circleOptions, option);
+            var circle = new fabric.Circle(setting);
+            this.canvas.add(circle);
+            return circle;
+        },
+        setCircleOption: function (key, val) {
+            if (typeof key === 'object') {
+                this.circleOptions = $.extend(this.circleOptions, key);
+            } else {
+                this.circleOptions[key] = val;
+            }
+        },
+        //履歴追加
+        pushState: function () {
+            // this.states.push(JSON.stringify(this.canvas));
+            this.states.push(this.canvas.toJSON(['selectable']));
+            this.redoList = [];
+            //イベント発火
+            $(this).trigger('edit.change');
+        },
+        //戻る
+        undo: function () {
+            var state = null;
+            var canvas = this.canvas;
+            var self = this;
+            if (this.states.length > 1) {
+                this.redoList.push(this.states.pop());
+                state = this.states[this.states.length - 1];
+            } else {
+                state = this.states[0];
+            }
+            // canvas.clear();
+            canvas.loadFromJSON(state, function () {
+                canvas.renderAll();
+                //イベント発火
+                $(self).trigger('edit.undo');
+                $(self).trigger('edit.change');
+            }, function (o, object) {
+                if (object.type == 'image') {
+                    self.mainImage = object;
+                }
+            });
+            self.setMode('show');
+        },
+        //進む
+        redo: function () {
+            if (this.redoList.length > 0) {
+                var state = this.redoList.pop();
+                var canvas = this.canvas;
+                var self = this;
+                this.states.push(state);
+                // this.canvas.clear().renderAll();
+                canvas.loadFromJSON(state, function () {
+                    canvas.renderAll();
+                    //イベント発火
+                    $(self).trigger('edit.redo');
+                    $(self).trigger('edit.change');
+                }, function (o, object) {
+                    if (object.type == 'image') {
+                        self.mainImage = object;
+                    }
+                });
+
+                this.setMode('show');
+            }
+        },
+        hasHistory: function () {
+            return this.states.length > 1;
+        },
+        hasRedo: function () {
+            return this.redoList.length > 0;
+        },
+        //保存
+        save: function () {
+            this.setMode('show');
+            if (this.$currImage) {
+                var imgData = this.canvas.toDataURL('png');
+                var img = this.$currImage;
+                this.canvas.renderAll();
+                this.$currImage.attr('src', imgData);
+                this.$currImage = null;
+
+                //イベント発火
+                $(this).trigger('image.saved', [img, imgData]);
+            }
+        },
+        //モード設定
+        setMode: function (mode, draw) {
+            if (mode == 'show') {
+                //編集状態をキャンセル
+                if (this.mode == 'crop') {
+                    this.canvas.remove(this.cropRect);
+                    //イベント発火
+                    $(this).trigger('crop.end');
+                }
+
+                //初期を編集モードとする
+                if (this.mode != 'draw') {
+                    this.mode = 'draw';
+                    this.draw = 'arrow';
+                }
+            } else {
+                this.mode = mode;
+                this.draw = draw;
+            }
+        },
+        on: function (event, func) {
+            $(this).on(event, func);
+        }
+    };
+    window.CanvasEditor = CanvasEditor;
+
+})
+(window, jQuery, fabric);

@@ -1,0 +1,981 @@
+//金額フォーマット
+(function ($) {
+    $.fn.priceFormat = function () {
+        var self = this;
+
+        self.each(function () {
+            if (isPriceFormat($(this))) {
+                formatPrice($(this));
+            }
+
+            if (!isInputText($(this)))
+                return;
+
+            // フォーカス取得イベント設定。金額フォーマットを解除
+            $(this).focus(function () {
+                if (isPriceFormat($(this))) {
+                    $(this).val($(this).val().replace(/,/g, ''));
+                }
+
+                $(this).select();
+            });
+            // フォーカス喪失イベント設定。金額フォーマットで整形
+            $(this).blur(function () {
+                if (isPriceFormat($(this))) {
+                    formatPrice($(this));
+                }
+            });
+        });
+
+        function isPriceFormat($el) {
+            var value = (isInputText($el) ? $el.val() : $el.text()).replace(/,/g, '');
+            return value.match(/^-?\d+(\.\d+)?$/);
+        }
+
+        function formatPrice($el) {
+            var values = (isInputText($el) ? $el.val() : $el.text()).split('.');
+            var val = values[0].replace(/(\d)(?=(\d\d\d)+(?!\d))/g, '$1,');
+            var digit = (values.length > 1) ? '.' + values[1] : ''
+            if (isInputText($el)) {
+                $el.val(val + digit);
+            } else {
+                $el.text(val + digit);
+            }
+        }
+
+        function isInputText($el) {
+            var el = $el.get(0);
+            if (el.nodeName == 'INPUT' && (el.type == 'text' || el.type == 'number' || el.type == 'tel')) {
+                return true;
+            }
+            return false;
+        }
+
+        return this;
+    }
+})(jQuery);
+
+$('.money').priceFormat();
+
+$('.date').datepicker({
+    format: "yyyy/mm/dd",
+    language: 'ja',
+    autoclose: 'true',
+    zIndex: '1050',
+    todayHighlight: true
+});
+
+$('.date2:not([readonly])').datepicker({
+    format: "yyyy/mm/dd",
+    language: 'ja',
+    autoclose: 'true',
+    zIndex: '1050',
+    todayHighlight: true,
+    enableOnReadonly: false
+});
+
+$('.year_month').datepicker({
+    format: "yyyy/mm",
+    language: 'ja',
+    autoclose: 'true',
+    zIndex: '1050',
+    todayHighlight: true,
+    minViewMode: 'months'
+});
+
+$('.year_month2:not([readonly])').datepicker({
+    format: "yyyy/mm",
+    language: 'ja',
+    autoclose: 'true',
+    zIndex: '1050',
+    todayHighlight: true,
+    minViewMode: 'months'
+});
+
+if ($('.time').length > 0) {
+    $('.time').timepicker({
+        minuteStep: 5,
+        showMeridian: false,
+        format: 'HH:mm',
+        defaultTime: ''
+    });
+}
+
+$('[data-toggle="tooltip"]').tooltip();
+
+//入力可能チェックボックスの色変え
+//$(':checkbox:not(:disabled)').parent('label').addClass('hilight');
+
+//backspace無効
+$(document).keydown(function(event){
+    // クリックされたキーのコード
+    var keyCode = event.keyCode;
+
+    // バックスペースキーを制御する
+    if(keyCode == 8){
+
+        var obj = event.target;
+
+        // テキストボックス／テキストエリアを制御する
+        if((obj.tagName.toUpperCase() == "INPUT" && ['TEXT', 'PASSWORD'].indexOf(obj.type.toUpperCase()) >= 0)
+            || obj.tagName.toUpperCase() == "TEXTAREA"){
+            // 入力できる場合は制御しない
+            if(!obj.readOnly && !obj.disabled){
+                return true;
+            }
+        }
+        return false;
+    }
+    //
+    // // Alt + ←→を制御する
+    // if(altClick && (keyCode == 37 || keyCode == 39){
+    //     return false;
+    // }
+});
+
+//readonlyのinput
+// $('input[readonly]').each(function () {
+//     $(this)[0].tabIndex = -1;
+// });
+
+//列表示制御
+if ($('div#colselect').length) {
+    $('#result tr').each(function () {
+        $(this.children).each(function (i) {
+            i = i + 1;
+            $(this).addClass('col' + i);
+        });
+    });
+
+    $('div#colselect input').each(function (i) {
+        i = i + 1;
+        var $check = '';
+        $(this).addClass('col' + i);
+        $(this).change(function () {
+            if ($(this).is(':checked')) {
+                $('#result .col' + i).show();
+            } else {
+                $('#result .col' + i).hide();
+            }
+        });
+
+    });
+}
+
+//一覧の高さ自動調整
+if ($('table#result').length) {
+    heightControl($('table#result'), 120);
+
+    var timer = false;
+    $(window).resize(function () {
+        if (timer !== false) {
+            clearTimeout(timer);
+        }
+        timer = setTimeout(function () {
+            heightControl($('table#result'), 120);
+        }, 200);
+    });
+
+}
+
+$('[data-autoheight]').each(function () {
+    var target = this
+    heightControl(target, $(target).data('autoheight'));
+
+    var timer = false;
+    $(window).resize(function () {
+        if (timer !== false) {
+            clearTimeout(timer);
+        }
+        timer = setTimeout(function () {
+            heightControl(target, $(target).data('autoheight'));
+        }, 200);
+    });
+});
+
+function getParam(name, url) {
+    if (!url) url = window.location.href;
+    name = name.replace(/[\[\]]/g, "\\$&");
+    var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
+function heightControl(target, height) {
+    var el = $(target).closest('div');
+    var h = $(window).height() - el.offset().top - height;
+    el.css("height", h + "px");
+}
+
+
+function isPriceFormat($el) {
+    var value = (isInput($el) ? $el.val() : $el.text()).replace(/,/g, '');
+    return value.match(/^-?\d+(\.\d+)?$/);
+}
+
+function formatPrice($el) {
+    var values = (isInput($el) ? $el.val() : $el.text()).split('.');
+    var val = values[0].replace(/(\d)(?=(\d\d\d)+(?!\d))/g, '$1,');
+    var digit = (values.length > 1) ? '.' + values[1] : ''
+    if (isInput($el)) {
+        $el.val(val + digit);
+    } else {
+        $el.text(val + digit);
+    }
+}
+
+function isInput(el) {
+    var tag = $(el).get(0).tagName;
+    return (tag == "INPUT" || tag == "SELECT" || tag == "TEXTAREA");
+}
+
+// disabledの切り替え
+function switchDisabled(selector, bool) {
+    $(selector).prop('disabled', bool);
+}
+
+function formatDateInyyyymmdd(date){
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
+
+    const yyyy = y.toString();
+    const mm = ("00" + m).slice(-2);
+    const dd = ("00" + d).slice(-2);
+
+    return yyyy + mm + dd;
+}
+
+
+//入力後にデータを他のテキストボックスにコピーする
+$('input[data-copy="true"],textarea[data-copy="true"],select[data-copy="true"]').change(function () {
+    $($(this).data('target-selector')).val($(this).val());
+});
+
+//ボタン押下時にデータを他のテキストボックスにコピーする
+$('button[data-copy="true"]').click(function () {
+    $($(this).data('target-selector')).val($($(this).data('source-selector')).val());
+});
+
+function showModal(title, msg, confirm, addHtml) {
+    $('#CommonModal .modal-title').html(title);
+    $('#CommonModal .modal-body').html(msg);
+    if (confirm) {
+        $('#CommonModalOk').hide();
+        $('#CommonModalYes').show();
+        $('#CommonModalNo').show();
+    } else {
+        $('#CommonModalOk').show();
+        $('#CommonModalYes').hide();
+        $('#CommonModalNo').hide();
+    }
+    $('#CommonModal').modal();
+}
+
+$('[data-fileopencheck="true"]').click(function () {
+    if ($(this).siblings('.label-success').hasClass('hide')) {
+        $(this).siblings('.label-success').removeClass('hide');
+        $(this).siblings('.label-danger').addClass('hide');
+    }
+});
+
+var targetrow = null;
+
+/* ↓↓↓↓ Rustic修正 ↓↓↓↓ */
+//table#Mitsumoriをtable#Costsに変更
+//mitsumoriをcostに変更
+$('table#Costs').on('click', '[data-target="#KomokuSearchModal"]', function () {
+    targetrow = $(this).closest('tr');
+});
+
+$('table#kojikomoku').on('click', 'button', function () {
+    var selected = $(this).closest('tr').find('td');
+
+    $(targetrow).find('[data-cost-taisho1]').val($(selected).eq(0).data('taisho1')).attr('readonly', true);
+    $(targetrow).find('[data-cost-taisho2]').val($(selected).eq(0).data('taisho2')).attr('readonly', true);
+    $(targetrow).find('[data-cost-naiyo]').val($(selected).eq(0).data('naiyo')).attr('readonly', true);
+    $(targetrow).find('[data-cost-tani]').val($(selected).eq(3).text()).attr('readonly', true);
+    $(targetrow).find('[data-cost-tanka]').val($(selected).eq(4).text()).attr('readonly', true);
+});
+
+//数量、単価、借主金額を変更した場合の計算
+// $('table#Mitsumori').on('change', '[data-cost-suryo],[data-cost-tanka],[data-cost-karinushikingaku]', function () {
+//     var row = $(this).closest('tr');
+//     var tanka = $(row).find('[data-cost-tanka]').val();
+//     var suryo = $(row).find('[data-cost-suryo]').val();
+//     var target = $(row).find('[data-cost-kingaku]');
+//     tanka = (tanka) ? tanka : "0";
+//     suryo = (suryo) ? suryo : "0";
+//     if (tanka.match(/^-?(\d|,)+(\.\d+)?$/) != null && suryo.match(/^-?(\d|,)+(\.\d+)?$/) != null) {
+//         var buf = parseInt(tanka.replace(/,/g, '')) * parseFloat(suryo.replace(/,/g, ''));
+//         $(target).val(Math.floor(buf));
+//         formatPrice($(target));
+//         culcfutankingaku(row);
+//     } else {
+//         $(target).val('');
+//     }
+// });
+
+$('table#Costs').on('change', '[data-cost-suryo],[data-cost-tanka],[data-cost-karinushikingaku]', function () {
+    var row = $(this).closest('tr');
+    culccost(row);
+});
+
+function culccost(row) {
+    var tanka = $(row).find('[data-cost-tanka]').val();
+    var suryo = $(row).find('[data-cost-suryo]').val();
+    var target = $(row).find('[data-cost-kingaku]');
+    tanka = (tanka) ? tanka : "0";
+    suryo = (suryo) ? suryo : "0";
+    if (tanka.match(/^-?(\d|,)+(\.\d+)?$/) != null && suryo.match(/^-?(\d|,)+(\.\d+)?$/) != null) {
+        var buf = new Decimal(tanka.replace(/,/g, '')).times(suryo.replace(/,/g, '')).toNumber();
+        //var buf = parseInt(tanka.replace(/,/g, '')) * parseFloat(suryo.replace(/,/g, ''));
+        $(target).val(Math.floor(buf));
+        formatPrice($(target));
+        culcfutankingaku(row);
+    } else {
+        $(target).val('');
+    }
+}
+
+//数量による単価変更
+function suryotankahenko(cbculc, cbculcgokei, programid){
+
+    //変更されたかどうかのフラグ
+    var tankahenkoflg = 0;
+
+    //対象の工事項目ID
+    var targetid = $('#koji_komoku_detail_id').val().split(',');
+
+    $(targetid).each(function(index1, val){
+        if(val){
+            //数量合計
+            var total = 0;
+
+            //対象行を格納する配列
+            var targettrs = [];
+
+            //対象行を格納
+            var trs = $('input[type=hidden][name^=kojikomoku_id][value=' + val + ']').closest('tr');
+
+            if(programid == '1010' || programid == '1014'){
+
+                $(trs).each(function(index2, tr){
+
+                    var row_no = $(tr).find(':input[name^=row_no]').val();
+
+                    //新規追加された値かどうか
+                    var isNew = false;
+
+                    //追加行である
+                    if (!row_no) {
+                        isNew = true;
+                    }
+
+                    //修正された値かどうか
+                    var isChanged = false;
+
+                    //修正区分が修正後である
+                    if(programid == '1010'){
+                        var shusei_kbn = $(tr).find(':input[name^=shusei_kbn]').val();
+                        if (shusei_kbn && shusei_kbn == SHUSEI_KBN_ATO) {
+                            isChanged = true;
+                        }
+                    } else {
+                        if ($(tr).find(':input[name^=isChanged]').val() == FLAG_ON) {
+                            isChanged = true;
+                        }
+                    }
+
+                    //削除された値かどうか
+                    var isDeleted = false;
+
+                    var delCheck = $(tr).find(':input[name^=delCheck]');
+
+                    if(delCheck) {
+                        if (delCheck.is(':checked')) {
+                            isDeleted = true;
+                        }
+                    }
+
+                    if (isNew) {
+                        //追加
+                        targettrs.push(tr);
+                    } else if (isChanged) {
+                        //１行前を削除して追加
+                        targettrs.pop();
+                        targettrs.push(tr)
+                    } else if (isDeleted) {
+                        //何もしない
+                    } else {
+                        //追加
+                        targettrs.push(tr);
+                    }
+                });
+            }else{
+                targettrs = trs;
+            }
+
+            $(targettrs).each(function () {
+                var suryo = $(this).find('[name^=suryo]').val();
+                suryo = (suryo) ? suryo : "0";
+                if (suryo.match(/^-?(\d|,)+(\.\d+)?$/) != null) {
+                    total += parseFloat(suryo.replace(/,/g, ''));
+                }
+            });
+
+            $('table#koji_komoku_detail tr').each(function () {
+                if ($(this).find('td.kojikomoku_id').text() == val && parseFloat($(this).find('td.suryo_from').text().replace(/,/g, '')) <= total && total < parseFloat($(this).find('td.suryo_to').text().replace(/,/g, ''))) {
+                    var tanka = parseInt($(this).find('td.tanka').text().replace(/,/g, ''));
+                    $(targettrs).each(function () {
+                        var tr = this;
+                        var henkomae = parseInt($(tr).find('[name^=tanka]').val().replace(/,/g, ''));
+                        if (henkomae != tanka) {
+                            $(tr).find('[name^=tanka]').val(tanka).addClass('tankahenko');
+                            //金額・負担金額を計算する
+                            cbculc(tr);
+                            tankahenkoflg = 1;
+                        }else{
+                            $(tr).find('[name^=tanka]').removeClass('tankahenko');
+                        }
+                    });
+                }
+            });
+        }
+    });
+
+    if(tankahenkoflg == 1){
+        //合計覧を計算する
+        cbculcgokei();
+        common.showMessage('数量により単価が変更されました。<br />確認後、再度ボタンを押下してください。');
+        return true;
+    }
+
+    return false;
+}
+
+//全て再計算
+function allculc(cbculc, cbculcgokei, programid, startidx, gokeiid, cbculcwarimodoshi){
+
+    //現在の合計金額を取得
+    var beforetotal = parseInt($('#' + gokeiid).text().replace(/,/g, ''));
+
+    //明細を計算する
+    var allRows = $('table#Costs tr');
+
+    for (var i = startidx, limit = allRows.length; i < limit; i++) {
+        var tr = allRows.eq(i);
+        if ($(tr).find(':input[name^=row_kbn]').val() == 3) {
+            cbculc(tr);
+            if ($('#keihi_warimodoshi_flg_on').prop('checked')) {
+                cbculcwarimodoshi(tr);
+            }
+        }
+    }
+
+    //合計覧を計算する
+    cbculcgokei();
+
+    var aftertotal = parseInt($('#' + gokeiid).text().replace(/,/g, ''));
+
+    if(beforetotal != aftertotal){
+        common.showMessage('再計算により合計金額が変更されました。<br />確認後、再度ボタンを押下してください。');
+        return true;
+    }
+
+    return false;
+}
+
+/* ↑↑↑↑↑↑↑↑↑↑↑↑↑↑ */
+
+function culcfutankingaku(row) {
+    var kingaku = $(row).find('[data-cost-kingaku]').val();
+    var karinushikingaku = $(row).find('[data-cost-karinushikingaku]').val();
+    var karinushiwariai = $(row).find('[data-cost-karinushiwariai]');
+    var kashinushikingaku = $(row).find('[data-cost-kashinushikingaku]');
+    var kashinushiwariai = $(row).find('[data-cost-kashinushiwariai]');
+
+    if ($(row).find('[data-cost-karinushikingaku]').val() == "") {
+        $(row).find('[data-cost-karinushikingaku]').val(0);
+    }
+
+    kingaku = (kingaku) ? kingaku : "0";
+    karinushikingaku = (karinushikingaku) ? karinushikingaku : "0";
+    if (kingaku.match(/^-?(\d|,)+(\.\d+)?$/) != null && karinushikingaku.match(/^-?(\d|,)+(\.\d+)?$/) != null) {
+        $(kashinushikingaku).val(parseInt(kingaku.replace(/,/g, '')) - parseInt(karinushikingaku.replace(/,/g, '')));
+        formatPrice($(kashinushikingaku));
+
+        /* ↓↓↓↓ Rustic修正 ↓↓↓↓ */
+        // $(karinushiwariai).val(parseInt(parseInt(karinushikingaku.replace(/,/g, '')) / parseInt(kingaku.replace(/,/g, '')) * 100));
+        // $(kashinushiwariai).val(100 - $(karinushiwariai).val());
+        if (parseInt(kingaku.replace(/,/g, '')) == 0) {
+            $(karinushiwariai).val(0);
+        } else {
+            $(karinushiwariai).val(parseInt(parseInt(karinushikingaku.replace(/,/g, '')) / parseInt(kingaku.replace(/,/g, '')) * 100));
+        }
+        $(kashinushiwariai).val(100 - $(karinushiwariai).val());
+        /* ↑↑↑↑↑↑↑↑↑↑↑↑↑↑ */
+    } else {
+        $(karinushiwariai).val('');
+        $(kashinushikingaku).val('');
+        $(kashinushiwariai).val('');
+    }
+}
+
+$('div[data-readonly]').find('input:not([type="text"]):not([type="hidden"]),select').attr('disabled', true);
+$('div[data-readonly]').find('input[type="text"],textarea').attr('readonly', true);
+
+$('.col-select-tab li a').click(function () {
+    $('#colselect input:checkbox').prop('checked', false).change();
+    var selectcol = $(this).data('select-col').split(',');
+    selectcol.forEach(function (col) {
+        $('#colselect input:checkbox.col' + col).prop('checked', true).change();
+    });
+});
+
+if ($('.col-select-tab a:first').length) {
+    $('.col-select-tab a:first').click();
+}
+;
+
+/* ↓↓↓↓ Rustic追加 ↓↓↓↓ */
+var common = common || {};
+var fileInput = fileInput || {};
+(function ($) {
+
+    /* 共通メソッド定義 Start */
+    //jQueryのセレクタをエスケープ
+    common.selectorEscape = function (val) {
+        if (val) {
+            return val.replace(/[ !"#$%&'()*+,.\/:;<=>?@\[\\\]^`{|}~]/g, '\\$&');
+        } else {
+            return val;
+        }
+    }
+
+    //URLパラメーターを配列で取得
+    common.getParams = function (url) {
+        url = url || location.search;
+        var params = {};
+        var startIdx = url.indexOf('?');
+        if (startIdx >= 0) {
+            var pair = url.substr(startIdx + 1).split('&');
+            for (var i = 0; pair[i]; i++) {
+                var kv = pair[i].split('=');
+                params[kv[0]] = kv[1];
+            }
+        }
+        return params;
+    }
+
+    //全選択、全解除
+    common.setCheckAllButton = function ($target) {
+        $target.click(function () {
+            var value = $(this).data('checkbox-all');
+            var selector = $(this).data('checkbox-all-selector');
+            if (value == 'check') {
+                $(selector).prop('checked', true);
+            } else {
+                $(selector).prop('checked', false);
+            }
+        });
+    }
+
+    //データ同期
+    common.setDataSync = function () {
+        var $org = $(this);
+        var name = $org.attr('name').replace('[', '\[');
+        var $dest = $('[name=' + common.selectorEscape(name) + ']');
+        var syncId = $org.data('sync-id');
+        if (syncId) {
+            $dest = $('[data-sync-id=' + syncId + ']');
+        }
+        switch ($org.attr('type').toUpperCase()) {
+            case 'TEXT':
+                $dest.val($org.val());
+                break;
+            case 'CHECKBOX':
+                $dest.prop('checked', $org.prop('checked'));
+                break;
+        }
+    }
+
+    //数値の合計処理
+    common.sumNumeric = function ($targets) {
+        $targets.each(function () {
+            var $target = $(this);
+            var $inputs = $($target.data('selector'));
+            var sumInput = function () {
+                var sum = 0;
+                $inputs.each(function () {
+                    try {
+                        //有効な数字のみ
+                        var val = $(this).val().replace(/,/g, '');
+                        var num = parseInt(val, 10);
+                        if (num) sum += num;
+                    } finally {
+                    }
+                });
+                $target.val(common.formatComma(sum));
+            };
+            $inputs.on('change blur', sumInput);
+        });
+    }
+
+    //桁で指定された値引き金額を返します
+    common.getNebikiKingakuKeta = function (kingaku, keta) {
+        if (keta == 0) {
+            return 0;
+        }
+        var buf = kingaku / Math.pow(10, keta);
+
+        if (kingaku >= 0) {
+            buf = Math.floor(buf);
+        } else {
+            buf = Math.ceil(buf);
+        }
+
+        var kingakuNew = buf * Math.pow(10, keta);
+
+        return kingaku - kingakuNew;
+    }
+
+    //割合で指定された値引き金額を返します
+    common.getNebikiKingakuWariai = function (kingaku, percentage) {
+        if (percentage == 0) {
+            return 0;
+        }
+        return Math.floor(kingaku * percentage / 100);
+    }
+    /* 共通メソッド定義 End */
+
+    /* 共通イベント登録 Start */
+    //削除確認メッセージ
+    common.setDeleteMessage = function ($target, event) {
+        $target.on(event, function () {
+            var $target = $(this);
+            var message = $target.data('message') || '削除してもよろしいですか？';
+            return confirm(message);
+        });
+    }
+
+    //EnterによるSubmitを防ぐ
+    //class属性に.allow_submitを指定するとSubmit可能
+    $(document).on("keypress", "input:not(.allow_submit)", function (event) {
+        return event.which !== 13;
+    });
+
+    //formのAjax化(/js/shared/submit_async.jsに移動)
+
+    //FormのAjax登録
+    common.setFormAsync = function ($targets, event) {
+        $targets.each(function () {
+            var $target = $(this);
+            if (!$target.data('async')) {
+                $target.on(event, function (e) {
+                    //イベントをキャンセル
+                    e.preventDefault();
+                    //非同期通信（遅延実行）
+                    var $form = $(this);
+                    setTimeout(function () {
+                        common.submitAsync($form);
+                    }, 0);
+                })
+
+                //非同期化フラグON
+                $target.data('async', true);
+            }
+        });
+    };
+
+    //サブミット前処理
+    common.submitBefore = function () {
+        var $obj = $(this);
+        common.activeButton = $obj.attr('name');
+    }
+
+    //モーダルメッセージ表示
+    common.showMessage = function (message, options) {
+        if (!common.messageModal) {
+            common.messageModal = $('#CommonMessageModal');
+        }
+        common.messageModal.find('.modal-message').html(message);
+        common.messageModal.modal(options);
+
+        common.messageModal.off('hidden.bs.modal');
+        if (options) {
+            var callback = options['callback'];
+            if (callback) {
+                common.messageModal.on('hidden.bs.modal', callback);
+            }
+        }
+    };
+
+    //モーダル確認表示
+    common.showConfirm = function (title, message, options) {
+        if (!common.confirmModal) {
+            common.confirmModal = $('#CommonConfirmModal');
+        }
+        common.confirmModal.find('.modal-title').html(title);
+        common.confirmModal.find('.modal-message').html(message);
+        common.confirmModal.modal(options);
+
+        common.confirmModal.off('hidden.bs.modal');
+        if (options) {
+            var callback = options['callback'];
+            if (callback) {
+                common.confirmModal.find('.btn-yes').off('click');
+                common.confirmModal.find('.btn-yes').on('click', callback);
+            }
+        }
+    };
+
+    common.setCommonEvent = function ($target) {
+        //Ajax化イベントの登録
+        common.setFormAsync($target.find('form[data-remote=true]'), 'submit');
+        common.setFormAsync($target.find('a[data-remote=true]'), 'click');
+
+        //削除メッセージ登録
+        common.setDeleteMessage($target.find('.confirm-delete'), 'click');
+
+        //チェックボタン全選択・解除
+        common.setCheckAllButton($target.find('[data-checkbox-all]'));
+
+        //金額合計
+        common.sumNumeric($target.find('.sum-numeric'));
+    }
+
+    //Datalistを使用したAutocomplete設定
+    common.setDataList = function ($target) {
+        $target.each(function () {
+            var $this = $(this);
+            var datalist = $('#' + $this.data('list'));
+            var source = [];
+            datalist.find('option').each(function () {
+                source.push($(this).val());
+            });
+            $this.autocomplete({
+                source: source,
+                minLength: 0,
+                delay: 0
+            }).focus(function() {
+                if(!$(this).prop('readonly') && !$(this).prop('disabled'))
+                    $this.autocomplete("search", "");
+            });
+        });
+    }
+
+    //ロード時処理
+    $(function () {
+
+        //初期メッセージの表示
+        var initMessage = $('#hdnInitMessage').val();
+        if (initMessage) {
+            common.showMessage(initMessage);
+        }
+
+        //フォーム送信ボタンの登録
+        $('form').find('button,input,a').on('click', common.submitBefore);
+
+        //フォーム送信(AjaxForm以外)
+        $('form').not('[data-remote=true]').on('submit', function () {
+            var $form = $(this);
+
+            if ($form.data('submited')) {
+                return true;
+            } else {
+                $form.data('submited', true);
+                //SubmitイベントがClickイベントより前に来るため遅延実行
+                setTimeout(function () {
+                    //ボタン名の設定
+                    var $name = $form.find('[name=_submit_button_name]');
+                    if ($name.length == 0) {
+                        $name = $('<input>', {
+                            type: 'hidden',
+                            name: '_submit_button_name',
+                        });
+                        $form.append($name);
+                    }
+                    $name.val(common.activeButton);
+
+                    //プログラムIDの設定
+                    var programId = $('meta[name="program-id"]').attr('content');
+                    var $programId = $form.find('[name=_program_id]');
+                    if ($programId.length == 0) {
+                        $programId = $('<input>', {
+                            type: 'hidden',
+                            name: '_program_id',
+                        });
+                        $form.append($programId);
+                    }
+                    $programId.val(programId);
+
+                    $form.submit();
+                }, 0);
+                return false;
+            }
+        });
+
+        // クリアボタン共通処理
+        $('[data-input-clear*="true"]').click(function () {
+            var selector = $(this).data('clear-selector');
+            $(selector).each(function () {
+                if (isInput(this)) {
+                    if ($(this).attr('type') == 'radio') {
+                        $(this).attr('checked', false);
+                    } else {
+                        $(this).val('');
+                    }
+                } else {
+                    $(this).text('');
+                }
+            })
+        });
+
+        //共通イベント登録
+        common.setCommonEvent($(document));
+    });
+
+    /* 共通イベント登録 End */
+
+    /**
+     * 任意の桁で四捨五入する関数
+     * @param {number} value 四捨五入する数値
+     * @param {number} base どの桁で四捨五入するか（小数第１位→10 小数第２位→100）
+     * @return {number} 四捨五入した値
+     */
+    common.roundEx = function (value, base) {
+        return Math.round(value * base) / base;
+    }
+
+    /**
+     * 数値のカンマ編集
+     * @param value
+     * @returns {string}
+     */
+    common.formatComma = function (value) {
+        value = value + '';
+        var values = value.split('.');
+        var val = values[0].replace(/(\d)(?=(\d\d\d)+(?!\d))/g, '$1,');
+        var digit = (values.length > 1) ? '.' + values[1] : '';
+        return val + digit;
+    }
+
+    /**
+     * 数値を金額表記に編集(\nnn,nnn-)
+     * @param value
+     * @returns {string}
+     */
+    common.formatMoney = function (value) {
+        return '\xA5' + common.formatComma(value) + '-';
+    }
+
+    /**
+     * 関数判定
+     * @param str
+     * @returns {boolean}
+     */
+    common.canConvertFunc = function (str) {
+        return typeof common.convertFunc(str) === 'function';
+    }
+
+    /**
+     * 引数を関数に変換
+     * @param str
+     * @returns {*}
+     */
+    common.convertFunc = function (str) {
+        try {
+            if (typeof str === 'string') {
+                var arr = str.split('.');
+                var obj = window;
+                for (i = 0; i < arr.length; i++) {
+                    obj = obj[arr[i]];
+                    if (!obj) return false;
+                }
+                return obj;
+            } else {
+                return str;
+            }
+        } catch (ex) {
+            console.log(ex);
+            return null;
+        }
+    }
+
+    // var mySkins = [
+    //     'skin-blue',
+    //     'skin-black',
+    // ]
+
+    common.ImgB64Resize = function(imgB64_src, callback) {
+        //callback(imgB64_src);
+        //return;
+        // Image Type
+        //var img_type = imgB64_src.substring(5, imgB64_src.indexOf(";"));
+        var img_type = imgB64_src.substring(5, 'image/png');
+        // Source Image
+        var img = new Image();
+        img.onload = function() {
+            var width = img.naturalWidth;
+            var height = img.naturalHeight;
+            var resize_width = SHASHIN_WIDTH;
+            var resize_height = SHASHIN_HEIGHT;
+            if (width / resize_width >= height / resize_height) {
+                resize_height = height * resize_width / width;
+            }else{
+                resize_width = width * resize_height / height;
+            }
+
+            // New Canvas
+            var canvas = document.createElement('canvas');
+            canvas.width = resize_width;
+            canvas.height = resize_height;
+            // Draw (Resize)
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, resize_width, resize_height);
+            // Destination Image
+            var imgB64_dst = canvas.toDataURL(img_type);
+            callback(imgB64_dst);
+        };
+        img.src = imgB64_src;
+    }
+
+    common.ImgB64Rotate = function(imgB64_src, callback, rotate) {
+        var img_type = imgB64_src.substring(5, 'image/png');
+        var img = new Image();
+        img.onload = function() {
+            var width = img.naturalWidth;
+            var height = img.naturalHeight;
+
+            var canvas = document.createElement('canvas');
+            if(rotate == 90 || rotate == 270) {
+                // swap w <==> h
+                canvas.width = height;
+                canvas.height = width;
+            } else {
+                canvas.width = width;
+                canvas.height = height;
+            }
+            // Draw (Resize)
+            var ctx = canvas.getContext('2d');
+            if(rotate == 90) {
+                ctx.rotate(rotate * Math.PI / 180);
+                if(rotate == 90)
+                    ctx.translate(0, -height);
+                else if(rotate == 180)
+                    ctx.translate(-width, -height);
+                else if(rotate == 270)
+                    ctx.translate(-width, 0);
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+            // Destination Image
+            var imgB64_dst = canvas.toDataURL(img_type);
+            callback(imgB64_dst);
+        };
+        img.src = imgB64_src;
+    }
+
+})(jQuery);

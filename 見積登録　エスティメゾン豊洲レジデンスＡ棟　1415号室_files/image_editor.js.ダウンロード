@@ -1,0 +1,154 @@
+var imageEditor = imageEditor || {};
+(function (window, $, fabric) {
+    /**
+     * 幅720px 高さ480pxにリサイズ
+     * @param image
+     */
+    imageEditor.resize = function (image) {
+        var MAX_WIDTH = 540;
+        var MAX_HEIGHT = 360;
+        var imgWidth = image.naturalWidth;
+        var imgHeight = image.naturalHeight;
+        if (imgWidth > MAX_WIDTH || imgHeight > MAX_HEIGHT) {
+            var cvsWidth, cvsHeight;
+            var marginTop = 0, marginLeft = 0;
+            var imgRatio = imgWidth / imgHeight;
+            var cvsRatio = MAX_WIDTH / MAX_HEIGHT;
+            if (imgRatio > cvsRatio) {
+                // 横のサイズを指定値にあわせる
+                cvsWidth = MAX_WIDTH;
+                cvsHeight = MAX_WIDTH / imgRatio;
+                marginTop = (MAX_HEIGHT - cvsHeight) / 2;
+            } else {
+                // 縦のサイズを指定値にあわせる
+                cvsWidth = MAX_HEIGHT * imgRatio;
+                cvsHeight = MAX_HEIGHT;
+                marginLeft = (MAX_WIDTH - cvsWidth) / 2;
+            }
+            // canvasのサイズを上で算出した値に変更
+            var $canvas = $('<canvas>').attr('width', MAX_WIDTH).attr('height', MAX_HEIGHT);
+            var canvas = $canvas[0];
+            var ctx = canvas.getContext('2d');
+            // canvasに描画
+            ctx.drawImage(image, 0, 0, imgWidth, imgHeight, marginLeft, marginTop, cvsWidth, cvsHeight);
+
+            setTimeout(function () {
+                // canvasからbase64画像データを取得
+                var imgData = canvas.toDataURL();
+                image.src = imgData;
+                $(image).parent().find('input[type=hidden]').val(imgData);
+            }, 0);
+        }
+    }
+
+    imageEditor.setEditor = function ($target) {
+        //リサイズ
+        // $target.each(function () {
+        //     var $img = $(this);
+        //     var orgSrc = this.src;
+        //     this.src = '';
+        //     $img.on('load', function () {
+        //         $img.off('load');
+        //         imageEditor.resize(this);
+        //     });
+        //     this.src = orgSrc;
+        // });
+
+        //編集モーダル表示
+        $target.off('click');
+        $target.on('click', function () {
+            imageEditor.editor.load(($(this)));
+
+            //モーダル表示
+            $('#ImageEditorModal').modal({});
+        });
+    }
+
+    //モーダル表示イベント
+    $('#ImageEditorModal').on('show.bs.modal', function () {
+        //モーダル初期化
+        $('.operator .edit-icon').show();
+        $('.operator .edit-detail').hide();
+    });
+
+    $(function () {
+        imageEditor.editor = new CanvasEditor('cvsEditor');
+
+        //イベント登録
+        imageEditor.editor.on('crop.start', function () {
+            $('.operator-crop .edit-detail').show();
+        });
+        imageEditor.editor.on('crop.end', function () {
+            $('.operator-crop .edit-detail').hide();
+        });
+        imageEditor.editor.on('edit.change', function () {
+            if (this.hasHistory()) {
+                $('.edit-undo').addClass('active');
+                $('.edit-undo').prop('disabled', false);
+            } else {
+                $('.edit-undo').removeClass('active');
+                $('.edit-undo').prop('disabled', true);
+            }
+            if (this.hasRedo()) {
+                $('.edit-redo').addClass('active');
+                $('.edit-redo').prop('disabled', false);
+            } else {
+                $('.edit-redo').removeClass('active');
+                $('.edit-redo').prop('disabled', true);
+            }
+        });
+        imageEditor.editor.on('image.saved', function (canvas, $img, data) {
+            $img.parent().find('input[type=hidden]').val(data);
+        });
+
+        //切抜きイベント
+        $('.edit-crop-start').click(function () {
+            imageEditor.editor.cropStart();
+        });
+        $('.edit-crop-ok').click(function () {
+            imageEditor.editor.cropImage();
+        });
+        $('.edit-crop-cancel').click(function () {
+            imageEditor.editor.cropCancel();
+        });
+        //矢印イベント
+        $('#drawButtons input[type=radio]').on('change', function () {
+            var type = $(this).data('type');
+            switch (type) {
+                case 'arrow':
+                    imageEditor.editor.arrowStart();
+                    break;
+                case 'circle':
+                    imageEditor.editor.circleStart();
+                    break;
+            }
+        });
+
+        //ストロークサイズ
+        $('#sldStroke').slider();
+        $('#sldStroke').on('change', function () {
+            var width = parseInt(this.value, 10);
+            imageEditor.editor.setArrowOption('strokeWidth', width);
+            imageEditor.editor.setCircleOption('strokeWidth', width);
+        });
+        $('#clrStroke').on('change', function () {
+            var color = '#' + this.value;
+            imageEditor.editor.setArrowOption('stroke', color);
+            imageEditor.editor.setCircleOption('stroke', color);
+        });
+
+        //操作
+        $('.edit-undo').click(function () {
+            imageEditor.editor.undo();
+        });
+        $('.edit-redo').click(function () {
+            imageEditor.editor.redo();
+        });
+
+        //保存
+        $('.btn-editor-save').click(function () {
+            imageEditor.editor.save();
+        });
+    });
+
+})(window, jQuery, fabric);

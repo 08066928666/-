@@ -1,0 +1,155 @@
+var modal = modal || {};
+(function ($) {
+    //モーダル種別
+    modal.types = {
+        gyosha: 'gyosha',
+        bukken: 'bukken',
+        kojikomoku: 'kojikomoku',
+        mitsumori: 'mitsumori',
+        hatchudata: 'hatchudata'
+    }
+
+    //モーダル設定
+    modal.modals = {
+        gyosha: {
+            id: '#GyoshaSearchModal',
+            settings: {
+                fields: {gyosha_nm: ''},
+                initSearch: false
+            }
+        },
+        bukken: {
+            id: '#BukkenSearchModal',
+            settings: {
+                fields: {bukken_cd: '', mune_cd: '', mune_cd: '', unit_cd: '', bukken_nm: ''},
+                initSearch: false
+            }
+        },
+        kojikomoku: {
+            id: '#KojikomokuSearchModal',
+            settings: {
+                fields: {gyosha: '', kojibu_cd: '', kojibu_cd_edaban: '', koshu2: '', free: ''},
+                initSearch: true
+            }
+        },
+        mitsumori: {
+            id: '#MitsumoriSearchModal',
+            settings: {
+                fields: {koshu2: '', free: ''},
+                initSearch: false
+            }
+        },
+        hatchudata: {
+            id: '#HatchudataSearchModal',
+            settings: {
+                fields: {koshu2: '', free: ''},
+                initSearch: false
+            }
+        }
+    };
+
+    //前処理
+    modal.before = function (mdl, $target, callabck) {
+        var $divModal = $(mdl.id);
+        var settings = callabck(mdl.settings, $target);
+        settings = $.extend(mdl.settings, settings);
+
+        //フィールドに初期値設定
+        if (typeof settings.fields === 'object') {
+            $.each(settings.fields, function (k, v) {
+                $divModal.find('[name=' + common.selectorEscape(k) + ']').val(v);
+            });
+        }
+
+        //初期検索
+        if (settings.initSearch) {
+            common.submitAsync($divModal.find('form'));
+        }
+    }
+
+    //モーダルを開く
+    modal.open = function (type, $targets, options) {
+        $targets.click(function () {
+            var $target = $(this);
+            var mdl = modal.modals[type];
+            if (mdl) {
+                var $divModal = $(mdl.id);
+                //モーダルクリア
+                $divModal.find('form')[0].reset();
+                $divModal.find('.modal-body').empty();
+
+                //前処理
+                var beforeCallback = $target.data('before');
+                if (common.canConvertFunc(beforeCallback)) {
+                    modal.before(mdl, $target, eval(beforeCallback));
+                }
+
+                //モーダルを開く
+                $divModal.modal(options);
+            }
+            modal._currentTarget = $target;
+            modal._currentModal = mdl;
+        });
+    };
+
+    //モーダル内選択
+    modal.select = function ($info) {
+        var ids = $info.data('select').split('|');
+        var $target = modal._currentTarget
+
+        //値設定
+        var items = {};
+        for (i = 0; i < ids.length; i++) {
+            var $dest = $('#' + common.selectorEscape($target.data(ids[i])));
+            if ($dest.is(':input')) {
+                $dest.val($info.data(ids[i]));
+            } else {
+                $dest.html($info.data(ids[i]));
+            }
+            items[ids[i]] = $info.data(ids[i]);
+        }
+
+        //コールバック
+        var callback = $target.data('select-callback');
+        if (common.canConvertFunc(callback)) {
+            eval(callback + '(items, $target)');
+        }
+
+        //モーダルを閉じる
+        $(modal._currentModal.id).modal('hide');
+    };
+
+    //検索成功Callback
+    modal.searchSuccess = function (data, $sender) {
+        var $senderClone = $sender.clone(true);//HTML上書き対応
+        var $updateTarget = $('#' + $senderClone.data('update-id'));
+        //リストの更新
+        $updateTarget.html(data);
+
+        //選択イベント登録
+        $updateTarget.find('[data-select]').click(function (e) {
+            //イベントをキャンセル
+            e.preventDefault();
+            modal.select($(this));
+        });
+
+        //URLに検索条件を追加
+
+        //ページ遷移リンク再設定
+        var $pageLinks = $updateTarget.find('.pagination a');
+        $pageLinks.data('success', $senderClone.data('success'));
+        $pageLinks.data('error', $senderClone.data('error'));
+        $pageLinks.data('update-id', $senderClone.data('updateId'));
+        $pageLinks.on('click', function (e) {
+            //イベントをキャンセル
+            e.preventDefault();
+            $senderClone.append($('<input>', {
+                type: 'hidden',
+                value: $(this).text(),
+                name: 'page'
+            }));
+            common.submitAsync($senderClone);
+        });
+    }
+
+})(jQuery);

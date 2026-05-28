@@ -1,0 +1,96 @@
+(function ($) {
+
+    //タブ切替
+    $('ul#reporttab li a').click(function(){
+
+        var group = $(this).data('group');
+        var base_selector = '#reporttable tr';
+
+        var $qr = $('#qrtorokusheettable tr :checkbox');
+        $qr.prop('disabled',true);
+
+        switch (group){
+            case 'all' :
+                $(base_selector + ' :checkbox').prop('disabled',false);
+                $(base_selector).show();
+                break;
+            case 'gyosha' :
+                $(base_selector + '.gyosha :checkbox').prop('disabled',false);
+                $(base_selector + '.gyosha').show();
+                $(base_selector + '.owner :checkbox').prop('disabled',true);
+                $(base_selector + '.owner').hide();
+                break;
+            case 'owner' :
+                $(base_selector + '.owner :checkbox').prop('disabled',false);
+                $(base_selector + '.owner').show();
+                $(base_selector + '.gyosha :checkbox').prop('disabled',true);
+                $(base_selector + '.gyosha').hide();
+                break;
+            case 'qr' :
+                $(base_selector + ' :checkbox').prop('disabled',true);
+                $qr.prop('disabled',false);
+                break;
+            default :
+
+        }
+    });
+
+    if(LISTMODE == 0){
+
+        $('#ReportPrintModal button[data-url]').click(function () {
+            var $tr = $(this).closest("tr");
+            var url = $(this).data("url");
+            var format = $tr.find("input[name^='format']:checked").val();
+
+            url = url + format;
+
+            if($tr.hasClass("qrtorokusheet")){
+                url = url + "&documentkbn=" + $tr.find("select[name^='documentKbn']").val();
+                url = url + "&filename=" + $tr.find("input[name^='fileName']").val();
+            }
+
+            window.location.href = url;
+        });
+
+    }
+
+    $('#btnBulkDownload').click(function (e) {
+        e.preventDefault();
+        var $form = $(this).closest('form');
+        var $hdnArea = $form.find('#reportTarget');
+        if($('#ReportPrintModal [name*="idx"]:checkbox:checked:not(:disabled)').length == 0){
+            common.showMessage('帳票が選択されていません');
+            return;
+        }
+        if(LISTMODE == 1) {
+            var $targets = $('.tab-pane.active').find('tr.row-selected');
+            if ($targets.length == 0) {
+                common.showMessage('明細が選択されていません');
+                return;
+            }
+
+            $hdnArea.empty();
+            $targets.each(function (idx, target) {
+                var $tr = $(target);
+                var kojibuCd = $tr.data('kojibu_cd');
+                var edaban = $tr.data('kojibu_cd_edaban');
+                $hdnArea.append('<input type="hidden" name="kojibu_cd[' + idx + ']" value="' + kojibuCd + '"/>');
+                $hdnArea.append('<input type="hidden" name="kojibu_cd_edaban[' + idx + ']" value="' + edaban + '"/>');
+            });
+        }
+
+        $form.submit();
+    });
+
+    $('input.filename').blur(function(){
+        var target = this;
+        if($(target).val().toString().match(/^.*[(\\|/|:|\*|?|\"|<|>|\|)].*$/)){
+            common.showMessage("ファイル名に「<」「>」「:」「*」「?」「”」「/」「\\」「|」は使えません。", {
+                    callback: function () {
+                        target.focus();
+                    }
+                });
+        }
+    });
+
+})(jQuery);

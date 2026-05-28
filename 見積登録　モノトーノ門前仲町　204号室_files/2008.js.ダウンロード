@@ -1,0 +1,650 @@
+/**
+ * 見積登録 JSファイル
+ */
+var J2008 = J2008 || {};
+(function ($) {
+    //ヘッダ行数
+    var hdrRowCnt = 1;
+    //テンプレート行数
+    var tmpRowCnt = 4;
+
+    //ロード時初期処理
+    init();
+
+    //ロード時初期処理
+    function init() {
+
+        //エラー表示領域を初期非表示にする
+        $('#errors').hide();
+
+        var init_tab = '1';
+
+        var qs = location.search.match(/tab=(.*?)(&|$)/);
+        if(qs){
+            init_tab = qs[1];
+        }
+
+        switch(init_tab){
+            case '2' :
+                $('.nav-tabs a:eq(1)').click();
+                break;
+            case '3' :
+                $('.nav-tabs a:eq(2)').click();
+                break;
+            default:
+                $('.nav-tabs a:eq(0)').click();
+                break;
+        }
+
+        $("table#Costs").tableHeadFixer();
+
+        var allRows = $('table#Costs tr');
+        //処理開始インデックス
+        var st = hdrRowCnt + tmpRowCnt;
+
+        var isReadOnly = true;
+        if (!$('#mitsumori_status').val() || $('#mitsumori_status').val() == MITSUMORI_STATUS_TEISHUTSU) {
+            isReadOnly = false;
+        }
+
+        for (var i = st, limit = allRows.length; i < limit; i++) {
+            var tr = allRows.eq(i);
+            //処理用インデックス
+            var idx = i - st;
+            //処理用インデックスを画面上に格納
+            $('#idx').val(idx);
+
+            //工事項目検索ボタン
+            var komokuSearchModal = $(tr).find(':input[name^=komokuSearchModal]');
+
+            if (isReadOnly) {
+                if (komokuSearchModal) {
+                    komokuSearchModal.prop("readonly", isReadOnly);
+                    komokuSearchModal.prop("disabled", isReadOnly);
+                }
+            }
+
+            tr.find(':input').each(function () {
+                if (isReadOnly) {
+                    //並べ替え不可にする
+                    tr.addClass("unsortable");
+
+                    $(this).attr('readonly', isReadOnly);
+
+                    if ($(this).is('select')) {
+                        $(this).prop("disabled", isReadOnly);
+                    }
+                }
+            });
+
+            var kojikomoku_id = $(tr).find(':input[name^=kojikomoku_id]');
+
+            if (kojikomoku_id.length > 0) {
+                if (kojikomoku_id.val().length > 0) {
+                    var koshu2_cd = $(tr).find(':input[name^=koshu2_cd]');
+                    var taisho1 = $(tr).find(':input[name^=taisho1]');
+                    var taisho2 = $(tr).find(':input[name^=taisho2]');
+                    var koji_naiyo = $(tr).find(':input[name^=koji_naiyo]');
+                    var tani = $(tr).find(':input[name^=tani]');
+                    var tanka = $(tr).find(':input[name^=tanka]');
+
+                    koshu2_cd.prop("readonly", true);
+                    kojikomoku_id.prop("readonly", true);
+                    taisho1.prop("readonly", true);
+                    taisho2.prop("readonly", true);
+                    koji_naiyo.prop("readonly", true);
+                    tani.prop("readonly", true);
+                    tanka.prop("readonly", true);
+                }
+            }
+        }
+
+        if (!$('#mitsumori_status').val()) {
+            //    do nothing
+        } else if ($('#mitsumori_status').val() == MITSUMORI_STATUS_TEISHUTSU) {
+            //見積ステータスが業者提出済の場合は一時保存はできない
+
+            $('#btnIchijihozon').attr('disabled', true);
+        } else {
+            //見積ステータスが業者提出済よりも後のステージの場合は明細編集をさせない
+
+            $('#btnAddKoshu1').attr('disabled', true);
+            $('#btnAddKoshu2').attr('disabled', true);
+            $('#btnAddMeisai').attr('disabled', true);
+            $('#btnAddComment').attr('disabled', true);
+            $('#btnKakoMitsumori').attr('disabled', true);
+            $('#btnIchijihozon').attr('disabled', true);
+            $('#keihi_wariai').attr('readonly', true);
+            $('#sel_nebiki_kbn').attr('disabled', true);
+            $('#nebiki_chi').attr('readonly', true);
+
+            if ($('#mitsumori_status').val() == MITSUMORI_STATUS_SAITEISHUTSU || $('#mitsumori_status').val() == MITSUMORI_STATUS_JURYO) {
+
+                $('#genchobi').attr('readonly', true);
+                $('#jokyo').attr('readonly', true);
+                $('#genin').attr('readonly', true);
+                $('#taio_naiyo').attr('readonly', true);
+                $('#mitsumori_kihon_biko').attr('readonly', true);
+
+                $('#kojigyosha_biko').attr('readonly', true);
+                $('#mitsumori_name').attr('readonly', true);
+                $('#btnToroku').attr('disabled', true);
+
+                $('#shodaku_kbn_yes').attr('disabled', true);
+                $('#shodaku_kbn_no').attr('disabled', true);
+
+                if ($('#shodaku_kbn_yes').prop('checked')) {
+                    $('#lbl_shodaku_kbn_no').attr('disabled', true);
+                    $('#lbl_shodaku_kbn_no').attr('readonly', true);
+                } else {
+                    $('#lbl_shodaku_kbn_yes').attr('disabled', true);
+                    $('#lbl_shodaku_kbn_yes').attr('readonly', true);
+                }
+            }
+        }
+
+        if ($('#tenant_goibi').attr('readonly')) {
+            $('#tenant_goibi').datepicker('destroy');
+        }
+
+        if ($('#genchobi').attr('readonly')) {
+            $('#genchobi').datepicker('destroy');
+        }
+
+        //価格を再計算する
+        if ($('#doSaikeisan').val() == FLAG_ON) {
+            var allRows = $('table#Costs tr');
+            //処理開始インデックス
+            var st = hdrRowCnt + tmpRowCnt;
+
+            for (var i = st, limit = allRows.length; i < limit; i++) {
+                var tr = allRows.eq(i);
+
+                if ($(tr).find(':input[name^=row_kbn]').val() == ROW_KBN_MEISAI) {
+                    culccost(tr);
+                }
+            }
+        }
+
+        //合計覧を計算する
+        JS_gyosha_total.calcGokei();
+
+        //価格を再計算する = 過去見積反映の場合
+        if ($('#doSaikeisan').val() == FLAG_ON) {
+            //先頭タブの選択
+            $('.nav-tabs a:eq(2)').click();
+        }
+
+        //データリストのイベント設定
+        common.setDataList($('.datalist'));
+
+        //リサイズ
+        $('.resize_div').resizable({ alsoResize: ".scroll_div", handles: "s, e, se" });
+
+        //ツールチップ設定
+        $('#Costs').on('mouseover',':input:not(.datalist), select', function(e){
+            var parent = $(this).closest('tr');
+            var tooltip = $(parent).find('.disp-row-no').text() + '行目　';
+
+            switch($(parent).find('[name^=row_kbn]').val()){
+                case '1':
+                    tooltip += $(parent).find(':input[name^=koshu1]').val();
+                    break;
+                case '2':
+                    tooltip += $(parent).find(':input[name^=koshu2_koban]').val() + '　' +  $(parent).find('select[name^=sel_koshu2_cd] option:selected').text();
+                    break;
+                case '3':
+                    tooltip += $(parent).find(':input[name^=taisho1]').val()
+                        + '　' + $(parent).find(':input[name^=taisho2]').val()
+                        + '　' + $(parent).find(':input[name^=koji_naiyo]').val()
+                        + '　' + $(parent).find(':input[name^=basho]').val()
+                        + '　' + $(parent).find(':input[name^=bui]').val();
+                    break;
+                case '4':
+                    tooltip += $(parent).find(':input[name^=comment]').val();
+                    break;
+                default:
+            }
+
+            $(this).attr('title', tooltip)
+                .tooltip({placement: 'bottom'})
+                .tooltip('fixTitle')
+                .tooltip('show');
+        });
+
+        $('#Costs').on('mouseleave',':input, select', function(e){
+            $(this).tooltip('destroy');
+        });
+
+        // $('#Costs').on('click',':input, select', function(e){
+        //     if($(this).attr('readonly')){
+        //         $(this).tooltip('destroy');
+        //     }
+        // });
+
+    }
+
+    //明細行ドラッグアンドドロップ
+    $('#Costs tbody').sortable({
+        cursor: 'move',                     //移動中のカーソル
+        opacity: 0.7,                       //移動中の項目の透明度
+        placeholder: "ui-state-highlight",  //ドロップ先の色指定(Styleで指定可能)
+        forcePlaceholderSize: true,         //trueでドラッグした要素のサイズを自動取得できる
+        handle: 'span',
+        cancel: '.unsortable',
+        stop: function (event, ui) {
+            reNumbering();
+        }
+    });
+    $('#Costs tbody').disableSelection;
+
+    //工事項目検索のモーダルイベント設定
+    modal.open(modal.types.kojikomoku, $('.modal-kojikomoku'));
+
+    //過去見積反映のモーダルイベント設定
+    modal.open(modal.types.mitsumori, $('#btnDoKakoMitsumori'));
+
+    // 工種１テンプレート行の複製
+    $('#btnAddKoshu1').on('click', function () {
+        var tempRows = $('#templateRow1').clone();
+        addTemplate(tempRows);
+    });
+
+    //工種２テンプレート行の複製
+    $('#btnAddKoshu2').on('click', function () {
+        var tempRows = $('#templateRow2').clone();
+        addTemplate(tempRows);
+    });
+
+    //明細テンプレート行の複製
+    $('#btnAddMeisai').on('click', function () {
+        var tempRows = $('#templateRow3').clone();
+        addTemplate(tempRows);
+        //工事項目検索ボタンの設定を行う
+        var btn = tempRows.find(':input[name^=komokuSearchModal]');
+        // //工事項目検索のモーダルイベント設定
+        modal.open(modal.types.kojikomoku, btn);
+    });
+
+    //コメントテンプレート行の複製
+    $('#btnAddComment').on('click', function () {
+        var tempRows = $('#templateRow4').clone();
+        addTemplate(tempRows);
+    });
+
+    // 過去見積反映ボタン事前処理
+    $('#btnKakoMitsumori').on('click', function () {
+        var message = '<div class="text-left text-red" style="font-weight: bold;font-size: larger;"><p>保存していないデータは破棄されますので、一時保存していない場合は「いいえ」を押して一時保存してください。</p>';
+        if ($('#Costs tr').length  > hdrRowCnt + tmpRowCnt) {
+            message += '<p>また、現在の見積明細は破棄されます。</p>';
+        }
+        message += '<br /><p>実行してもよろしいですか？</p></div>';
+
+        common.showConfirm("確認", message, {'callback': function(){$('#btnDoKakoMitsumori').click();}})
+
+    });
+
+    //承諾・拒否を無効化する
+    $('.btn-group').on("click", ".readonly", function (event) {
+        return false;
+    });
+
+    // 単価差分解消ボタン
+    $(document).on('click', '[change_tanka]', function () {
+        var tr = $(this).closest('tr');
+        var tanka = $(tr).find(':input[name^=tanka]');
+        tanka.val($(tr).find(':input[name^=m_tanka]').val());
+        //価格の再計算
+        culccost(tr);
+        //合計覧を計算する
+        JS_gyosha_total.calcGokei();
+    });
+
+    //行を削除する
+    $(document).on('click', '[data-cost-delete]', function () {
+        $(this).closest('tr').remove();
+        //処理用インデックスを格納
+        $('#idx').val($('#idx').val() - 1);
+        //再採番
+        reNumbering();
+        //合計値再計算
+        JS_gyosha_total.calcGokei();
+    });
+
+    //価格計算処理を登録する
+    $('table#Costs').on('change', '[data-cost-suryo], [data-cost-tanka], [data-cost-karinushikingaku]', function () {
+        JS_gyosha_total.calcGokei();
+    });
+
+    //要素の値をコピーする
+    $(document).on('change', '[copy_value]', function () {
+        copyTo($(this));
+    });
+
+    //テンプレート行をコピーして追加する
+    function addTemplate(tempRows) {
+        var table = $('#Costs')[0];
+        //複製行のインデックス（ヘッダ行、テンプレート行分を省く）
+        var idx = table.rows.length - hdrRowCnt - tmpRowCnt;
+
+        //処理用インデックスを格納
+        $('#idx').val(idx);
+
+        //idをクリア
+        tempRows.removeAttr('id');
+
+        //name、idを指定
+        tempRows.find(':input').each(function () {
+            var idx = $('#idx').val();
+            setNameWithIndex($(this), idx);
+        });
+
+        //データリストのイベント設定
+        common.setDataList(tempRows.find('.datalist'));
+
+        // CSSクラスを設定
+        tempRows.css('display', '');
+
+        //表示用No
+        tempRows.find('.disp-row-no').text(idx + 1);
+
+        // 行追加を設定
+        $(tempRows).appendTo(table);
+
+        //追加行の先頭テキストボックスにフォーカス
+        $(tempRows).find(':input[type=text]:first').focus();
+    }
+
+    //インデックスを0から振りなおす
+    function reNumbering() {
+        var allRows = $('table#Costs tr');
+        //処理開始インデックス
+        var st = hdrRowCnt + tmpRowCnt;
+
+        //tempRowの次の行から処理を開始する
+        for (var i = st, limit = allRows.length; i < limit; i++) {
+            var tr = allRows.eq(i);
+            //処理用インデックス
+            var idx = i - st;
+
+            //処理用インデックスを格納
+            $('#idx').val(idx);
+
+            tr.find(':input').each(function () {
+                var idx = $('#idx').val();
+                setNameWithIndex($(this), idx);
+            });
+
+            //表示用Noも更新
+            tr.find('.disp-row-no').text(idx + 1);
+        }
+    }
+
+    //追加要素に処理用インデックスを付与した名前を設定する
+    function setNameWithIndex(target, idx) {
+        var nm = target.attr('name');
+
+        if (!nm) {
+            return;
+        }
+
+        if (nm.indexOf('[') >= 0) {
+            nm = nm.substring(0, nm.indexOf('['));
+        }
+
+        var newName = nm + '[' + idx + ']';
+        target.attr('name', newName);
+        target.attr('id', newName);
+        console.log(target.attr('name'));
+    }
+
+
+
+    $('[name=shokairyo]').change(function (){
+        if($('#shokairyo_wariai')[0]){
+            var visibleShuseigo = false;
+            if ($('#mitsumori_status').val()) {
+                if ($('#mitsumori_status').val() != MITSUMORI_STATUS_TEISHUTSU) {
+                    visibleShuseigo = true;
+                }
+            }
+
+            if(visibleShuseigo){
+                culcShokairyoWariai($('#txt_gokei_kingaku_shuseigo').text());
+            }else{
+                culcShokairyoWariai($('#txt_gokei_kingaku').text());
+            }
+        }
+    });
+
+    //引数の要素の値をコピーする
+    function copyTo(target) {
+        var nm = target.attr('name');
+        if (nm.indexOf('sel_koshu2_cd') >= 0) {
+            var toNm = 'koshu2_cd' + nm.substring(nm.indexOf("["));
+            var toElmnt = $('input[name="' + toNm + '"]');
+            if (toElmnt) {
+                toElmnt.val(target.val());
+                console.log(toElmnt.val());
+            }
+        }
+    }
+
+    // 工事項目選択事前処理
+    beforeKojikomoku = function (settings, $target) {
+        var kojibu_cd = $('#kojibu_cd').val();
+        var kojibu_cd_edaban = $('#kojibu_cd_edaban').val();
+        var koshu2_cd = null;
+        var tr = $target.closest('tr')
+
+        for (; ;) {
+            //1つ前のtrを取得
+            var prevTr = tr.prev("tr");
+
+            //1つ前のtrがなければループ終了
+            if (prevTr.length == 0) {
+                break;
+            }
+
+            //1つ前のtrがテンプレート行ならループ終了
+            if(!prevTr.prop('id').indexOf('templateRow')){
+                break;
+            }
+
+            //行区分取得
+            var row_kbn = $(prevTr).find(':input[name^=row_kbn]');
+
+            //行区分が工種１ならループ終了
+            if (row_kbn.val() == 1) {
+                break;
+            }
+
+            //行区分が工種２ならその値を取得してループ終了
+            if (row_kbn.val() == ROW_KBN_KOSHU2) {
+                koshu2_cd = prevTr.find(':input[name^=sel_koshu2_cd]').val();
+                break;
+            }
+            tr = prevTr;
+        }
+        settings.fields['gyosha'] = FLAG_ON;
+        settings.fields['kojibu_cd'] = kojibu_cd;
+        settings.fields['kojibu_cd_edaban'] = kojibu_cd_edaban;
+        settings.fields['koshu2_cd'] = koshu2_cd;
+        settings.initSearch = true;
+        return settings;
+    }
+
+    // 工事項目選択時コールバック
+    selectKojikomoku = function (items, $target) {
+        var tr = $target.closest('tr')
+        var koshu2_cd = $(tr).find(':input[name^=koshu2_cd]');
+        var kojikomoku_id = $(tr).find(':input[name^=kojikomoku_id]');
+        var taisho1 = $(tr).find(':input[name^=taisho1]');
+        var taisho2 = $(tr).find(':input[name^=taisho2]');
+        var koji_naiyo = $(tr).find(':input[name^=koji_naiyo]');
+        var tani = $(tr).find(':input[name^=tani]');
+        var tanka = $(tr).find(':input[name^=tanka]');
+        var m_tanka = $(tr).find(':input[name^=m_tanka]');
+
+        koshu2_cd.val(items['koshu2_cd']);
+        kojikomoku_id.val(items['kojikomoku_id']);
+        taisho1.val(items['taisho1']);
+        taisho2.val(items['taisho2']);
+        koji_naiyo.val(items['koji_naiyo']);
+        tani.val(items['tani_name']);
+        tanka.val(items['tanka']);
+        m_tanka.val(items['tanka']);
+
+        koshu2_cd.prop("readonly", true);
+        kojikomoku_id.prop("readonly", true);
+        taisho1.prop("readonly", true);
+        taisho2.prop("readonly", true);
+        koji_naiyo.prop("readonly", true);
+        tani.prop("readonly", true);
+        tanka.prop("readonly", true);
+
+        //金額・負担金額を計算する
+        culccost(tr);
+
+        //合計覧を計算する
+        JS_gyosha_total.calcGokei();
+    }
+
+    // 過去見積反映ボタンコールバック
+    selectMitsumori = function (items, $target) {
+        var kojibu_cd = $('#kojibu_cd').val()
+        var kojibu_cd_edaban = $('#kojibu_cd_edaban').val()
+
+        var copy_kojibu_cd = items['kojibu_cd'];
+        var copy_kojibu_cd_edaban = items['kojibu_cd_edaban'];
+        var copy_mitsumori_rireki_edaban = items['mitsumori_rireki_edaban'];
+        var copy_torokusha_kbn = items['torokusha_kbn'];
+
+        var redirect = '/mitsumoritoroku/' + kojibu_cd + '/' + kojibu_cd_edaban + '/' + copy_kojibu_cd + '/' + copy_kojibu_cd_edaban + '/' + copy_mitsumori_rireki_edaban + '/' + copy_torokusha_kbn;
+        location.href = redirect;
+    }
+
+    //一時保存ボタン押下時処理
+    J2008.update_ichiji = function (form){
+
+        if(suryotankahenko(culccost,JS_gyosha_total.calcGokei,'2008')){return;}
+
+        if(allculc(culccost,JS_gyosha_total.calcGokei,'2008',hdrRowCnt + tmpRowCnt,'txt_gokei_kingaku')){return;}
+
+        form.submit();
+    };
+
+    //見積送信ボタン押下時処理
+    J2008.update = function (form){
+
+        if(suryotankahenko(culccost,JS_gyosha_total.calcGokei,'2008')){return;}
+
+        if(allculc(culccost,JS_gyosha_total.calcGokei,'2008',hdrRowCnt + tmpRowCnt,'txt_gokei_kingaku')){return;}
+
+        if($('#eSignModal')[0]){
+            if (!J2008.eSignModal) {
+                J2008.eSignModal = $('#eSignModal');
+            }
+
+            J2008.eSignModal.modal();
+            J2008.eSignModal.find('.btn-yes').off('click');
+            J2008.eSignModal.find('.btn-yes').on('click', function () {
+                form.submit();
+            });
+        } else {
+            form.submit();
+        }
+    };
+
+    //工種２選択時
+    J2008.changeKoshu2 = function(target){
+        // var target_val = $(target).val();
+        // if(target_val != ""){
+        //     $('select[name^="sel_koshu2_cd["]').each(function (){
+        //         if($(this).closest('tr').prop('id').indexOf('templateRow') < 0){
+        //             if($(target).prop('name') != $(this).prop('name') && target_val == $(this).val()){
+        //                 alert("同一の工種２を複数選択することはできません");
+        //                 if($(target).children('[value=""]').length == 0){
+        //                     $(target).prepend("<option value=''></option>");
+        //                 }
+        //                 $(target).val("");
+        //                 return;
+        //             }
+        //         }
+        //     });
+        // }
+    };
+
+    //タブ保持用のパラメータを設定
+    J2008.setTabUrlParam = function(form){
+        var index = $('ul.nav-tabs li').index($('ul.nav-tabs li.active'));
+        if(index > 0) {
+            var redirecturl = $(form).data('redirect-if-success');
+            var pos = redirecturl.indexOf('?');
+            if (pos < 0) {
+                $(form).data('redirect-if-success', redirecturl + '?tab=' + (index + 1).toString())
+            } else {
+                $(form).data('redirect-if-success', redirecturl.substring(0, pos) + '?tab=' + (index + 1).toString())
+            }
+        }
+    }
+    // $('table#Costs').on('change', '[data-cost-suryo]', function () {
+    //     J2008.culcSuryoGokei($(this));
+    // });
+    //
+    // //数量合計を計算
+    // J2008.culcSuryoGokei = function($target){
+    //     var koshu2 = null;
+    //     var tr = $target.closest('tr');
+    //     var gokei = parseFloat(0);
+    //     for (; ;) {
+    //         var prevTr = tr.prev("tr");
+    //
+    //         if (prevTr.length == 0) {
+    //             break;
+    //         }
+    //
+    //         if(!prevTr.prop('id').indexOf('templateRow')){
+    //             break;
+    //         }
+    //
+    //         var row_kbn = $(prevTr).find(':input[name^=row_kbn]');
+    //         if (row_kbn.val() == ROW_KBN_KOSHU2) {
+    //             koshu2 = prevTr;
+    //             break;
+    //         }
+    //         tr = prevTr;
+    //     }
+    //
+    //     if(koshu2){
+    //         var tr = koshu2;
+    //
+    //         for (; ;) {
+    //             var nextTr = tr.next("tr");
+    //
+    //             if (nextTr.length == 0) {
+    //                 break;
+    //             }
+    //
+    //             var row_kbn = $(nextTr).find(':input[name^=row_kbn]');
+    //             if (row_kbn.val() == ROW_KBN_KOSHU2) {
+    //                 break;
+    //             }
+    //             if (row_kbn.val() == 3 || row_kbn.val() == 5) {
+    //                 var suryo = $(nextTr).find(':input[name^="suryo"]').val();
+    //                 if(suryo && suryo != ""){
+    //                     gokei = gokei + parseFloat(suryo);
+    //                 }
+    //
+    //             }
+    //             tr = nextTr;
+    //         }
+    //
+    //         koshu2.find(':input[name^=soryo]').val(gokei);
+    //     }
+    //
+    //
+    //
+    // }
+
+})(jQuery);

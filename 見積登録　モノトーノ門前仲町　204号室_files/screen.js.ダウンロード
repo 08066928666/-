@@ -1,0 +1,49 @@
+var screen = screen || {
+    isShowLock: false
+};
+(function ($) {
+
+    screen._lockDiv = $('<div>', {
+        class: 'screen-lock'
+    }).append($('<div>', {
+        class: 'loader'
+    }));
+    screen.lock = function ($target) {
+        var $lockDiv = screen._lockDiv.clone();
+        if (!$target) {
+            $target = $('body');
+            $lockDiv.css('position', 'fixed');
+        }
+        if (!$target.data('screen-loked')) {
+            var id = 'screenLock' + (+new Date());
+            $lockDiv.attr('id', id);
+            $target.data('screen-lock-id', id);
+            $target.data('screen-loked', true);
+            $target.append($lockDiv);
+        }
+    }
+    screen.unlock = function ($target) {
+        $target = $target || $('body');
+        if ($target.data('screen-loked')) {
+            var id = $target.data('screen-lock-id');
+            $('#' + id).remove();
+            $target.data('screen-loked', false);
+        }
+    }
+    screen.unlockAll = function () {
+        $('.screen-lock').remove();
+        $(':data(screen-lock-id)').data('screen-loked', false);
+    }
+
+    /*
+     * 画面操作無効を解除する
+     */
+    function unlockScreen(id) {
+
+        /*
+         * 画面を覆っているタグを削除する
+         */
+        $("#" + id).remove();
+    }
+
+})(jQuery);

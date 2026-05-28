@@ -1,0 +1,46 @@
+/**
+ * 非同期情報取得
+ */
+var common = common || {};
+(function ($) {
+    common.getInfo = function (type, data, options) {
+        var url;
+        switch (type) {
+            case 'kojigyoshaUser':
+                url = '/ajax/user/gyosha'
+                break;
+            case 'chumonsha':
+                url = '/ajax/chumonsha'
+                break;
+            case 'juchuhenko':
+                url = '/ajax/juchuhenko'
+                break;
+            case 'hatchuhenko':
+                url = '/ajax/hatchuhenko'
+                break;
+        }
+
+        if (url) {//非同期送信
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+            var ajaxOptions = {
+                url: url,
+                type: 'get',
+                data: data,
+                timeout: 100000,  // 単位はミリ秒
+                //送信前
+                beforeSend: options['beforeSend'],
+                //応答後
+                complete: options['complete'],
+                //通信成功時の処理
+                success: options['success'],
+                //通信失敗時の処理
+                error: options['error']
+            };
+            $.ajax(ajaxOptions);
+        }
+    }
+})(jQuery);

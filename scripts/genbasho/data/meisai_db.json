@@ -1,0 +1,1265 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-06-08T02:49:07.352Z",
+  "entryCount": 49,
+  "entries": [
+    {
+      "id": "a680a8d51803",
+      "sel_koshu2_cd": "0",
+      "koshu2_text": "",
+      "koshu1_text": "補修工事",
+      "kojikomoku_id": "",
+      "taisho1": "フローリング・建具補修",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "",
+      "bui": "",
+      "tani": "人工",
+      "tanka": 30000,
+      "suryo_sample": 0.5,
+      "biko1": "経年劣化",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　モノトーノ門前仲町　204号室.html"
+      ]
+    },
+    {
+      "id": "0e50189c49cb",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "補修工事",
+      "kojikomoku_id": "",
+      "taisho1": "ﾌﾛｰﾘﾝｸﾞ建具補修",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 25000,
+      "suryo_sample": 2,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "03f6b2a465be",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "洗濯水栓スパウト交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "ｽﾊﾟｳﾄ補修部材",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 3330,
+      "suryo_sample": 1,
+      "biko1": "錆",
+      "maker": "ﾀﾌﾞﾁ",
+      "type": "SP1100S-K1-D",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "403ade6ba65b",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "洗濯水栓スパウト交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "交換施工費",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 11500,
+      "suryo_sample": 1,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "見積登録　モノトーノ門前仲町　204号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "9b3ac0ff4164",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "温水洗浄便座交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "洗浄便座",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "",
+      "bui": "",
+      "tani": "台",
+      "tanka": 30000,
+      "suryo_sample": 1,
+      "biko1": "経年劣化",
+      "maker": "LIXIL",
+      "type": "CW-H42",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "f97b99310f45",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "その他設備　修理・補修交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "浴槽フロフタ",
+      "taisho2": "",
+      "koji_naiyo": "交換",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 8000,
+      "suryo_sample": 1,
+      "biko1": "経年劣化",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "dd835f29c529",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "その他設備　修理・補修交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "ガスコンロ部材",
+      "taisho2": "",
+      "koji_naiyo": "交換",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 6849,
+      "suryo_sample": 1,
+      "biko1": "本体交換削除",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "fa40977ff6fc",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "その他設備　修理・補修交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "包丁差し",
+      "taisho2": "",
+      "koji_naiyo": "交換",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 2000,
+      "suryo_sample": 1,
+      "biko1": "経年劣化",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "0772dd0d3e5e",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "その他設備　修理・補修交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "エアコンスリーブ",
+      "taisho2": "",
+      "koji_naiyo": "交換",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 1000,
+      "suryo_sample": 2,
+      "biko1": "経年劣化",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "717a76fe17f6",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "その他設備　修理・補修交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "消火器交換",
+      "taisho2": "",
+      "koji_naiyo": "交換",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 10000,
+      "suryo_sample": 1,
+      "biko1": "期限切れ迄1カ月",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "8e14bbb597af",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "その他設備　修理・補修交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "ガス警報器",
+      "taisho2": "",
+      "koji_naiyo": "交換",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 7900,
+      "suryo_sample": 1,
+      "biko1": "期限切れ",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "635d8828a19b",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "その他設備　修理・補修交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "固定工事",
+      "taisho2": "",
+      "koji_naiyo": "エルボー",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 1500,
+      "suryo_sample": 1,
+      "biko1": "経年劣化",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "見積登録　モノトーノ門前仲町　204号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "29d44565fc4b",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "その他設備　修理・補修交換",
+      "koshu1_text": "鍵工事",
+      "kojikomoku_id": "",
+      "taisho1": "ｼﾘﾝﾀﾞｰ分解洗浄",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 4700,
+      "suryo_sample": 1,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "39fe0d15dd6a",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "",
+      "koshu1_text": "固定工事",
+      "kojikomoku_id": "272",
+      "taisho1": "室内クリーニング",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "",
+      "bui": "",
+      "tani": "㎡",
+      "tanka": 600,
+      "suryo_sample": 72.6,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "31f864d6aa8d",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "",
+      "koshu1_text": "固定工事",
+      "kojikomoku_id": "",
+      "taisho1": "循環口清掃",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 2500,
+      "suryo_sample": 1,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "775dfe2955a9",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "",
+      "koshu1_text": "固定工事",
+      "kojikomoku_id": "",
+      "taisho1": "ﾌﾛｰﾘﾝｸﾞ剥離",
+      "taisho2": "（LDKのみ）",
+      "koji_naiyo": "",
+      "basho": "",
+      "bui": "",
+      "tani": "㎡",
+      "tanka": 500,
+      "suryo_sample": 22.9,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "ba11cfe7fd17",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "",
+      "koshu1_text": "固定工事",
+      "kojikomoku_id": "",
+      "taisho1": "レンジフード",
+      "taisho2": "",
+      "koji_naiyo": "クリーニング",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 7000,
+      "suryo_sample": 1,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "08704bef9e1d",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "",
+      "koshu1_text": "固定工事",
+      "kojikomoku_id": "",
+      "taisho1": "Cプラン工事",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 6000,
+      "suryo_sample": 1,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "99ff5fb5ed2c",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "温水洗浄便座交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "管球交換",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 7530,
+      "suryo_sample": 1,
+      "biko1": "一部LEDへ",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　モノトーノ門前仲町　204号室.html"
+      ]
+    },
+    {
+      "id": "ef4dda535cf7",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "",
+      "koshu1_text": "固定工事",
+      "kojikomoku_id": "335",
+      "taisho1": "室内",
+      "taisho2": "(20㎡未満)",
+      "koji_naiyo": "クリーニング",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 28000,
+      "suryo_sample": 1,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　モノトーノ門前仲町　204号室.html"
+      ]
+    },
+    {
+      "id": "390ffcbc4b19",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "",
+      "koshu1_text": "固定工事",
+      "kojikomoku_id": "336",
+      "taisho1": "室内",
+      "taisho2": "(20㎡以上)",
+      "koji_naiyo": "クリーニング",
+      "basho": "",
+      "bui": "",
+      "tani": "㎡",
+      "tanka": 700,
+      "suryo_sample": 3,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　モノトーノ門前仲町　204号室.html"
+      ]
+    },
+    {
+      "id": "cfa344de97be",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "",
+      "koshu1_text": "固定工事",
+      "kojikomoku_id": "337",
+      "taisho1": "エアコン",
+      "taisho2": "",
+      "koji_naiyo": "内部洗浄",
+      "basho": "",
+      "bui": "",
+      "tani": "台",
+      "tanka": 9000,
+      "suryo_sample": 1,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　モノトーノ門前仲町　204号室.html"
+      ]
+    },
+    {
+      "id": "d7a7204a4c95",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "",
+      "koshu1_text": "固定工事",
+      "kojikomoku_id": "377",
+      "taisho1": "レンジフード",
+      "taisho2": "",
+      "koji_naiyo": "内部洗浄",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 9000,
+      "suryo_sample": 1,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　モノトーノ門前仲町　204号室.html"
+      ]
+    },
+    {
+      "id": "2fddc05c2b6f",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "",
+      "koshu1_text": "固定工事",
+      "kojikomoku_id": "",
+      "taisho1": "外部ガラリ清掃",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 3000,
+      "suryo_sample": 1,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　モノトーノ門前仲町　204号室.html"
+      ]
+    },
+    {
+      "id": "6844c8b4f6e8",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "",
+      "koshu1_text": "固定工事",
+      "kojikomoku_id": "",
+      "taisho1": "Aプラン工事",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "",
+      "bui": "",
+      "tani": "式",
+      "tanka": 5000,
+      "suryo_sample": 1,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [],
+      "sources": [
+        "見積登録　モノトーノ門前仲町　204号室.html"
+      ]
+    },
+    {
+      "id": "4e3cc51ef024",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "通常工事",
+      "kojikomoku_id": "270",
+      "taisho1": "クロス貼替え(量産品)",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "LD",
+      "bui": "天井",
+      "tani": "㎡",
+      "tanka": 800,
+      "suryo_sample": 15.7,
+      "biko1": "照明跡",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "LD"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "f62c90238cae",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "通常工事",
+      "kojikomoku_id": "270",
+      "taisho1": "クロス貼替え(量産品)",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "LD",
+      "bui": "壁",
+      "tani": "㎡",
+      "tanka": 800,
+      "suryo_sample": 33.8,
+      "biko1": "家具跡・補修跡",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "LD"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "f339296e71a9",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "その他設備　修理・補修交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "アース付コンセント",
+      "taisho2": "",
+      "koji_naiyo": "交換",
+      "basho": "キッチン",
+      "bui": "",
+      "tani": "式",
+      "tanka": 5000,
+      "suryo_sample": 1,
+      "biko1": "アースカバー無",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "キッチン"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "515256115304",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "温水洗浄便座交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "便座本体",
+      "taisho2": "",
+      "koji_naiyo": "交換",
+      "basho": "トイレ",
+      "bui": "",
+      "tani": "式",
+      "tanka": 25000,
+      "suryo_sample": 1,
+      "biko1": "ランプ点滅",
+      "maker": "Panasonic",
+      "type": "CH951SPF",
+      "basho_aliases": [
+        "トイレ",
+        "洗面トイレ",
+        "洗面"
+      ],
+      "sources": [
+        "見積登録　モノトーノ門前仲町　204号室.html"
+      ]
+    },
+    {
+      "id": "d087cdaf38fe",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "通常工事",
+      "kojikomoku_id": "270",
+      "taisho1": "クロス貼替え(量産品)",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "ﾄｲﾚ",
+      "bui": "壁",
+      "tani": "㎡",
+      "tanka": 800,
+      "suryo_sample": 3.4,
+      "biko1": "補修跡",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "トイレ",
+        "ﾄｲﾚ",
+        "洗面トイレ",
+        "洗面"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "73b72a8ef32a",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "その他設備　修理・補修交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "通気口フィルター",
+      "taisho2": "",
+      "koji_naiyo": "交換",
+      "basho": "各室",
+      "bui": "",
+      "tani": "式",
+      "tanka": 7300,
+      "suryo_sample": 1,
+      "biko1": "経年劣化",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "各室"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "73421e30e90a",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "その他設備　修理・補修交換",
+      "koshu1_text": "鍵工事",
+      "kojikomoku_id": "",
+      "taisho1": "ｼﾘﾝﾀﾞｰ交換",
+      "taisho2": "",
+      "koji_naiyo": "ローテーション",
+      "basho": "玄関",
+      "bui": "",
+      "tani": "式",
+      "tanka": 2400,
+      "suryo_sample": 2,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "玄関",
+        "玄関廊下",
+        "廊下",
+        "玄関キッチン"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "107e2d2ffc21",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "温水洗浄便座交換",
+      "koshu1_text": "鍵工事",
+      "kojikomoku_id": "",
+      "taisho1": "シリンダー交換",
+      "taisho2": "",
+      "koji_naiyo": "ローテーション",
+      "basho": "玄関",
+      "bui": "",
+      "tani": "箇所",
+      "tanka": 3000,
+      "suryo_sample": 2,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "玄関",
+        "玄関廊下",
+        "廊下",
+        "玄関キッチン"
+      ],
+      "sources": [
+        "見積登録　モノトーノ門前仲町　204号室.html"
+      ]
+    },
+    {
+      "id": "7e9b7940ca18",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "温水洗浄便座交換",
+      "koshu1_text": "鍵工事",
+      "kojikomoku_id": "",
+      "taisho1": "シリンダー分解洗浄",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "玄関",
+      "bui": "",
+      "tani": "式",
+      "tanka": 5500,
+      "suryo_sample": 2,
+      "biko1": "抜き差し悪い",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "玄関",
+        "玄関廊下",
+        "廊下",
+        "玄関キッチン"
+      ],
+      "sources": [
+        "見積登録　モノトーノ門前仲町　204号室.html"
+      ]
+    },
+    {
+      "id": "f29051680abc",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "通常工事",
+      "kojikomoku_id": "270",
+      "taisho1": "クロス貼替え(量産品)",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "玄関・廊下",
+      "bui": "天井",
+      "tani": "㎡",
+      "tanka": 800,
+      "suryo_sample": 5,
+      "biko1": "経年劣化",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "玄関廊下",
+        "玄関・廊下",
+        "玄関",
+        "廊下",
+        "玄関キッチン"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "5b6443853484",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "通常工事",
+      "kojikomoku_id": "270",
+      "taisho1": "クロス貼替え(量産品)",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "玄関・廊下",
+      "bui": "壁",
+      "tani": "㎡",
+      "tanka": 800,
+      "suryo_sample": 12.7,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "玄関廊下",
+        "玄関・廊下",
+        "玄関",
+        "廊下",
+        "玄関キッチン"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "be07ead23730",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "温水洗浄便座交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "保安灯",
+      "taisho2": "",
+      "koji_naiyo": "交換",
+      "basho": "玄関廊下",
+      "bui": "",
+      "tani": "式",
+      "tanka": 5125,
+      "suryo_sample": 1,
+      "biko1": "点灯不良",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "玄関廊下",
+        "玄関",
+        "廊下",
+        "玄関キッチン"
+      ],
+      "sources": [
+        "見積登録　モノトーノ門前仲町　204号室.html"
+      ]
+    },
+    {
+      "id": "bfc4b0b41014",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "通常工事",
+      "kojikomoku_id": "270",
+      "taisho1": "クロス貼替え(量産品)",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "洗面所",
+      "bui": "壁",
+      "tani": "㎡",
+      "tanka": 800,
+      "suryo_sample": 2.3,
+      "biko1": "家具跡",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "洗面",
+        "洗面所",
+        "洗面トイレ",
+        "トイレ"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "873a9af0914a",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "",
+      "koshu1_text": "固定工事",
+      "kojikomoku_id": "",
+      "taisho1": "ｺｰｷﾝｸﾞ打替",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "洗面台",
+      "bui": "",
+      "tani": "式",
+      "tanka": 3000,
+      "suryo_sample": 1,
+      "biko1": "クロスに伴う",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "洗面台"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "a0e2b0c93396",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "エアコン交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "材工",
+      "taisho2": "",
+      "koji_naiyo": "他社施工",
+      "basho": "洋室（右）",
+      "bui": "",
+      "tani": "台",
+      "tanka": 0,
+      "suryo_sample": 1,
+      "biko1": "経年劣化／天吊り",
+      "maker": "ダイキン",
+      "type": "2.5ｋｗ",
+      "basho_aliases": [
+        "洋室（右）"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "2625772eed15",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "エアコン交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "逆支弁交換",
+      "taisho2": "",
+      "koji_naiyo": "他社施工",
+      "basho": "洋室（右）",
+      "bui": "",
+      "tani": "式",
+      "tanka": 0,
+      "suryo_sample": 1,
+      "biko1": "",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "洋室（右）"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "81e24397d3e5",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "通常工事",
+      "kojikomoku_id": "270",
+      "taisho1": "クロス貼替え(量産品)",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "洋室（右）",
+      "bui": "天井",
+      "tani": "㎡",
+      "tanka": 800,
+      "suryo_sample": 9.6,
+      "biko1": "照明跡",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "洋室（右）"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "e048782396c8",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "通常工事",
+      "kojikomoku_id": "270",
+      "taisho1": "クロス貼替え(量産品)",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "洋室（右）",
+      "bui": "壁",
+      "tani": "㎡",
+      "tanka": 800,
+      "suryo_sample": 16.3,
+      "biko1": "家具跡・エアコン交換",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "洋室（右）"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "1f485c9bcc46",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "通常工事",
+      "kojikomoku_id": "270",
+      "taisho1": "クロス貼替え(量産品)",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "洋室（右WIC）",
+      "bui": "壁",
+      "tani": "㎡",
+      "tanka": 800,
+      "suryo_sample": 4.6,
+      "biko1": "物跡・補修跡",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "洋室（右WIC）"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "4ae8707b6037",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "通常工事",
+      "kojikomoku_id": "270",
+      "taisho1": "クロス貼替え(量産品)",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "洋室（奥）",
+      "bui": "天井",
+      "tani": "㎡",
+      "tanka": 800,
+      "suryo_sample": 9.7,
+      "biko1": "照明跡",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "洋室（奥）"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "a13f2cac932b",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "通常工事",
+      "kojikomoku_id": "270",
+      "taisho1": "クロス貼替え(量産品)",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "洋室（奥）",
+      "bui": "壁",
+      "tani": "㎡",
+      "tanka": 800,
+      "suryo_sample": 11.5,
+      "biko1": "家具跡・エアコン",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "洋室（奥）"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "5445ebb4464c",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "通常工事",
+      "kojikomoku_id": "270",
+      "taisho1": "クロス貼替え(量産品)",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "洋室（左）",
+      "bui": "天井",
+      "tani": "㎡",
+      "tanka": 800,
+      "suryo_sample": 8.8,
+      "biko1": "照明跡",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "洋室（左）"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "adaab59edb38",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "クロス",
+      "koshu1_text": "通常工事",
+      "kojikomoku_id": "270",
+      "taisho1": "クロス貼替え(量産品)",
+      "taisho2": "",
+      "koji_naiyo": "",
+      "basho": "洋室（左）",
+      "bui": "壁",
+      "tani": "㎡",
+      "tanka": 800,
+      "suryo_sample": 17,
+      "biko1": "家具跡・エアコン",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "洋室（左）"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    },
+    {
+      "id": "8641f35d29b3",
+      "sel_koshu2_cd": "1",
+      "koshu2_text": "その他設備　修理・補修交換",
+      "koshu1_text": "設備交換工事",
+      "kojikomoku_id": "",
+      "taisho1": "浴室鏡",
+      "taisho2": "",
+      "koji_naiyo": "交換",
+      "basho": "浴室",
+      "bui": "",
+      "tani": "式",
+      "tanka": 10000,
+      "suryo_sample": 1,
+      "biko1": "内部腐蝕",
+      "maker": "",
+      "type": "",
+      "basho_aliases": [
+        "浴室"
+      ],
+      "sources": [
+        "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html",
+        "toyosu-1415.html"
+      ]
+    }
+  ],
+  "byKoshu2": {
+    "0": {
+      "koshu2_cd": "0",
+      "label": "工種0",
+      "categoryId": null,
+      "entry_ids": [
+        "a680a8d51803"
+      ]
+    },
+    "1": {
+      "koshu2_cd": "1",
+      "label": "クロス工事",
+      "categoryId": "wallpaper",
+      "entry_ids": [
+        "0e50189c49cb",
+        "03f6b2a465be",
+        "403ade6ba65b",
+        "9b3ac0ff4164",
+        "f97b99310f45",
+        "dd835f29c529",
+        "fa40977ff6fc",
+        "0772dd0d3e5e",
+        "717a76fe17f6",
+        "8e14bbb597af",
+        "635d8828a19b",
+        "29d44565fc4b",
+        "39fe0d15dd6a",
+        "31f864d6aa8d",
+        "775dfe2955a9",
+        "ba11cfe7fd17",
+        "08704bef9e1d",
+        "99ff5fb5ed2c",
+        "ef4dda535cf7",
+        "390ffcbc4b19",
+        "cfa344de97be",
+        "d7a7204a4c95",
+        "2fddc05c2b6f",
+        "6844c8b4f6e8",
+        "4e3cc51ef024",
+        "f62c90238cae",
+        "f339296e71a9",
+        "515256115304",
+        "d087cdaf38fe",
+        "73b72a8ef32a",
+        "73421e30e90a",
+        "107e2d2ffc21",
+        "7e9b7940ca18",
+        "f29051680abc",
+        "5b6443853484",
+        "be07ead23730",
+        "bfc4b0b41014",
+        "873a9af0914a",
+        "a0e2b0c93396",
+        "2625772eed15",
+        "81e24397d3e5",
+        "e048782396c8",
+        "1f485c9bcc46",
+        "4ae8707b6037",
+        "a13f2cac932b",
+        "5445ebb4464c",
+        "adaab59edb38",
+        "8641f35d29b3"
+      ]
+    }
+  }
+}

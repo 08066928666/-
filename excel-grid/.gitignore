@@ -1,4 +1,4 @@
 
 # Generated genkou pipeline outputs
-excel-grid/data/genkou-output.json
-excel-grid/data/genkou-rpa.csv
+data/genkou-output.json
+data/genkou-rpa.csv

@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "genkou:build-db": "node scripts/build-meisai-db.mjs",
+    "genkou:process": "node scripts/process-genkou.mjs",
+    "genkou:test-cross": "node scripts/process-genkou.mjs samples/genkou-cross-sample.txt"
   },
   "dependencies": {
     "cors": "^2.8.6",

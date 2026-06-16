@@ -412,7 +412,7 @@ function MobileTypedLine({
       <details className="mobile-line-extra" open={hasSub}>
         <summary>
           メーカー・品番・備考
-          <span className="mobile-field-hint-inline">長押しで選択</span>
+          <span className="mobile-field-hint-inline">▤ ボタンで選択</span>
         </summary>
         <div className="mobile-line-extra-grid">
           <label className="mobile-field">
@@ -475,7 +475,7 @@ function MobileCommentRow({ line, onPatch, onDelete }) {
         type="text"
         className="mobile-comment-input"
         value={line.text}
-        placeholder="※ コメント...（長押しで選択）"
+        placeholder="※ コメント..."
         presets={presets}
         onChange={(v) => onPatch({ text: v })}
       />

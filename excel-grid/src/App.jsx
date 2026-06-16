@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { PropertyRoomList } from "./dx/PropertyRoomList.jsx";
+import { PropertyListPage } from "./dx/mobile/PropertyListPage.jsx";
+import { PropertyDetailPage } from "./dx/mobile/PropertyDetailPage.jsx";
 import { SimpleQuoteEditor } from "./dx/SimpleQuoteEditor.jsx";
 
 const AUTH_KEY = "haseko-app-auth-v1";
@@ -10,38 +11,52 @@ function loadProperties() {
   try {
     const raw = localStorage.getItem(PROPERTIES_KEY);
     if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return [
     {
-      id: "p1", name: "アーデン清澄白河", address: "東京都江東区",
+      id: "p1",
+      name: "アーデン清澄白河",
+      address: "東京都江東区",
       rooms: [
         { id: "r1", roomNo: "307号室", status: "pending", updatedAt: null },
         { id: "r2", roomNo: "501号室", status: "pending", updatedAt: null }
       ]
     },
     {
-      id: "p2", name: "エスティメゾン豊洲レジデンスA棟", address: "東京都江東区豊洲",
-      rooms: [
-        { id: "r3", roomNo: "1415号室", status: "pending", updatedAt: null }
-      ]
+      id: "p2",
+      name: "エスティメゾン豊洲レジデンスA棟",
+      address: "東京都江東区豊洲",
+      rooms: [{ id: "r3", roomNo: "1415号室", status: "pending", updatedAt: null }]
     }
   ];
 }
 
 function saveProperties(props) {
-  try { localStorage.setItem(PROPERTIES_KEY, JSON.stringify(props)); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(PROPERTIES_KEY, JSON.stringify(props));
+  } catch {
+    /* ignore */
+  }
 }
 
 function loadQuote(roomId) {
   try {
     const raw = localStorage.getItem(QUOTE_PREFIX + roomId);
     if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return [];
 }
 
 function saveQuote(roomId, lines) {
-  try { localStorage.setItem(QUOTE_PREFIX + roomId, JSON.stringify(lines)); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(QUOTE_PREFIX + roomId, JSON.stringify(lines));
+  } catch {
+    /* ignore */
+  }
 }
 
 function calcLineQty(line, sectionType) {
@@ -55,9 +70,6 @@ function calcLineQty(line, sectionType) {
   return Number(line.suryo) || 0;
 }
 
-/* ═══════════════════════════════════════════
-   Login Screen
-   ═══════════════════════════════════════════ */
 function LoginScreen({ onLogin }) {
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
@@ -65,8 +77,15 @@ function LoginScreen({ onLogin }) {
 
   const submit = (e) => {
     e.preventDefault();
-    if (!user.trim()) { setErr("ユーザー名を入力してください"); return; }
-    try { localStorage.setItem(AUTH_KEY, JSON.stringify({ user: user.trim(), at: Date.now() })); } catch { /* ignore */ }
+    if (!user.trim()) {
+      setErr("ユーザー名を入力してください");
+      return;
+    }
+    try {
+      localStorage.setItem(AUTH_KEY, JSON.stringify({ user: user.trim(), at: Date.now() }));
+    } catch {
+      /* ignore */
+    }
     onLogin(user.trim());
   };
 
@@ -83,16 +102,29 @@ function LoginScreen({ onLogin }) {
         <form onSubmit={submit} className="space-y-5">
           <label className="block">
             <span className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">ユーザー名</span>
-            <input className="login-input" value={user} onChange={(e) => setUser(e.target.value)}
-              placeholder="demo" autoComplete="username" />
+            <input
+              className="login-input"
+              value={user}
+              onChange={(e) => setUser(e.target.value)}
+              placeholder="demo"
+              autoComplete="username"
+            />
           </label>
           <label className="block">
             <span className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">パスワード</span>
-            <input type="password" className="login-input" value={pass} onChange={(e) => setPass(e.target.value)}
-              placeholder="••••••" autoComplete="current-password" />
+            <input
+              type="password"
+              className="login-input"
+              value={pass}
+              onChange={(e) => setPass(e.target.value)}
+              placeholder="••••••"
+              autoComplete="current-password"
+            />
           </label>
           {err && <p className="text-center text-xs text-rose-600 font-medium">{err}</p>}
-          <button type="submit" className="login-btn">ログイン</button>
+          <button type="submit" className="login-btn">
+            ログイン
+          </button>
         </form>
         <p className="mt-6 text-center text-[11px] text-slate-400">プロトタイプ — 任意のユーザー名でログイン可能</p>
       </div>
@@ -100,59 +132,112 @@ function LoginScreen({ onLogin }) {
   );
 }
 
-/* ═══════════════════════════════════════════
-   App Root
-   ═══════════════════════════════════════════ */
 export default function App() {
   const [authed, setAuthed] = useState(() => {
-    try { return Boolean(localStorage.getItem(AUTH_KEY)); } catch { return false; }
+    try {
+      return Boolean(localStorage.getItem(AUTH_KEY));
+    } catch {
+      return false;
+    }
   });
   const [userName, setUserName] = useState(() => {
-    try { const raw = localStorage.getItem(AUTH_KEY); return raw ? (JSON.parse(raw).user || "demo") : ""; } catch { return ""; }
+    try {
+      const raw = localStorage.getItem(AUTH_KEY);
+      return raw ? JSON.parse(raw).user || "demo" : "";
+    } catch {
+      return "";
+    }
   });
 
+  /** @type {['properties' | 'property-detail' | 'editor']} */
   const [screen, setScreen] = useState("properties");
   const [properties, setProperties] = useState(loadProperties);
+  const [activePropertyId, setActivePropertyId] = useState(null);
   const [activeRoom, setActiveRoom] = useState(null);
   const [quoteLines, setQuoteLines] = useState([]);
 
-  useEffect(() => { saveProperties(properties); }, [properties]);
-
-  const handleLogin = useCallback((name) => { setUserName(name); setAuthed(true); }, []);
-  const handleLogout = useCallback(() => {
-    try { localStorage.removeItem(AUTH_KEY); } catch { /* ignore */ }
-    setAuthed(false); setUserName(""); setScreen("properties");
-  }, []);
-
-  const openRoom = useCallback((propertyId, roomId) => {
-    const prop = properties.find((p) => p.id === propertyId);
-    const room = prop?.rooms.find((r) => r.id === roomId);
-    if (!prop || !room) return;
-    setActiveRoom({ propertyId, propertyName: prop.name, roomId, roomNo: room.roomNo });
-    setQuoteLines(loadQuote(roomId));
-    setScreen("editor");
+  useEffect(() => {
+    saveProperties(properties);
   }, [properties]);
 
-  const handleSaveQuote = useCallback((sections) => {
-    if (!activeRoom) return;
-    saveQuote(activeRoom.roomId, sections);
-    setQuoteLines(sections);
-    const allLines = Array.isArray(sections) ? sections.flatMap((s) => s.lines || []) : [];
-    const total = (Array.isArray(sections) ? sections : []).reduce((sum, sec) => {
-      const lines = Array.isArray(sec?.lines) ? sec.lines : [];
-      return sum + lines.reduce((lineSum, line) => lineSum + calcLineQty(line, sec.kojiType) * (Number(line?.teika) || 0), 0);
-    }, 0);
-    const detailCount = allLines.filter((l) => l?.type !== "comment").length;
-    setProperties((prev) => prev.map((p) => p.id !== activeRoom.propertyId ? p : {
-      ...p, rooms: p.rooms.map((r) => r.id !== activeRoom.roomId ? r : {
-        ...r, status: detailCount > 0 ? "draft" : "pending", total, updatedAt: new Date().toISOString()
-      })
-    }));
-  }, [activeRoom]);
+  const handleLogin = useCallback((name) => {
+    setUserName(name);
+    setAuthed(true);
+  }, []);
 
-  const handleBackToList = useCallback(() => {
+  const handleLogout = useCallback(() => {
+    try {
+      localStorage.removeItem(AUTH_KEY);
+    } catch {
+      /* ignore */
+    }
+    setAuthed(false);
+    setUserName("");
     setScreen("properties");
+    setActivePropertyId(null);
     setActiveRoom(null);
+  }, []);
+
+  const openProperty = useCallback((propertyId) => {
+    setActivePropertyId(propertyId);
+    setScreen("property-detail");
+  }, []);
+
+  const openRoom = useCallback(
+    (propertyId, roomId) => {
+      const prop = properties.find((p) => p.id === propertyId);
+      const room = prop?.rooms.find((r) => r.id === roomId);
+      if (!prop || !room) return;
+      setActivePropertyId(propertyId);
+      setActiveRoom({ propertyId, propertyName: prop.name, roomId, roomNo: room.roomNo });
+      setQuoteLines(loadQuote(roomId));
+      setScreen("editor");
+    },
+    [properties]
+  );
+
+  const handleSaveQuote = useCallback(
+    (sections) => {
+      if (!activeRoom) return;
+      saveQuote(activeRoom.roomId, sections);
+      setQuoteLines(sections);
+      const allLines = Array.isArray(sections) ? sections.flatMap((s) => s.lines || []) : [];
+      const total = (Array.isArray(sections) ? sections : []).reduce((sum, sec) => {
+        const lines = Array.isArray(sec?.lines) ? sec.lines : [];
+        return sum + lines.reduce((lineSum, line) => lineSum + calcLineQty(line, sec.kojiType) * (Number(line?.teika) || 0), 0);
+      }, 0);
+      const detailCount = allLines.filter((l) => l?.type !== "comment").length;
+      setProperties((prev) =>
+        prev.map((p) =>
+          p.id !== activeRoom.propertyId
+            ? p
+            : {
+                ...p,
+                rooms: p.rooms.map((r) =>
+                  r.id !== activeRoom.roomId
+                    ? r
+                    : {
+                        ...r,
+                        status: detailCount > 0 ? "draft" : "pending",
+                        total,
+                        updatedAt: new Date().toISOString()
+                      }
+                )
+              }
+        )
+      );
+    },
+    [activeRoom]
+  );
+
+  const handleBackFromEditor = useCallback(() => {
+    setScreen("property-detail");
+    setActiveRoom(null);
+  }, []);
+
+  const handleBackFromProperty = useCallback(() => {
+    setScreen("properties");
+    setActivePropertyId(null);
   }, []);
 
   if (!authed) return <LoginScreen onLogin={handleLogin} />;
@@ -164,17 +249,30 @@ export default function App() {
         roomNo={activeRoom.roomNo}
         lines={quoteLines}
         onSave={handleSaveQuote}
-        onBack={handleBackToList}
+        onBack={handleBackFromEditor}
         userName={userName}
       />
     );
   }
 
+  if (screen === "property-detail" && activePropertyId) {
+    const property = properties.find((p) => p.id === activePropertyId);
+    return (
+      <PropertyDetailPage
+        property={property}
+        allProperties={properties}
+        onPropertiesChange={setProperties}
+        onBack={handleBackFromProperty}
+        onOpenRoom={openRoom}
+      />
+    );
+  }
+
   return (
-    <PropertyRoomList
+    <PropertyListPage
       properties={properties}
       onPropertiesChange={setProperties}
-      onOpenRoom={openRoom}
+      onSelectProperty={openProperty}
       userName={userName}
       onLogout={handleLogout}
     />

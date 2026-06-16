@@ -23,39 +23,11 @@ export const BASHO_PRESETS = [
 
 export const BUI_PRESETS = ["壁", "天井", "床", "建具", "巾木", "扉"];
 
-/**
- * 天井㎡ — 実見積・原紙見積から抽出した代表値
- * 5.0=玄関廊下, 8.3=洗面, 9.6/9.7=洋室, 15.7=洋室(奥), 18.0+=LD系
- */
-export const CEILING_M2_PRESETS = [
-  "3.3",
-  "5.0",
-  "8.3",
-  "8.8",
-  "9.6",
-  "9.7",
-  "12.4",
-  "15.7",
-  "18.0",
-  "33.8"
-];
+/** 数字ホイール共通 — 1〜100（天井・壁㎡） */
+export const NUMERIC_1_100_PRESETS = Array.from({ length: 100 }, (_, i) => String(i + 1));
 
-/**
- * 壁㎡ — 実見積・原紙見積から抽出した代表値
- * 2.3/4.6=WIC等小空间, 8.3=洗面, 11.5~17=洋室, 23.6=洋室全体, 30+=LD
- */
-export const WALL_M2_PRESETS = [
-  "2.3",
-  "4.6",
-  "8.3",
-  "11.5",
-  "16.3",
-  "17.0",
-  "21.6",
-  "23.6",
-  "30.0",
-  "33.6"
-];
+export const CEILING_M2_PRESETS = NUMERIC_1_100_PRESETS;
+export const WALL_M2_PRESETS = NUMERIC_1_100_PRESETS;
 
 export const MAKER_PRESETS = ["リリカラ", "サンゲツ", "トーソー", "東リ", "ルノン"];
 

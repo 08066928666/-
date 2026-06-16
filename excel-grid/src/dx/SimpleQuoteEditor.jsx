@@ -1,8 +1,21 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 
 function newId(prefix = "id") { return prefix + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7); }
 function fmtYen(n) { const v = Math.round(Number(n) || 0); return v > 0 ? `¥${v.toLocaleString("ja-JP")}` : "—"; }
+
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(`(max-width: ${breakpoint - 1}px)`).matches : false
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const onChange = () => setIsMobile(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [breakpoint]);
+  return isMobile;
+}
 
 /* ═══════════════════════════════════════════
    Work Type Definitions
@@ -261,6 +274,202 @@ function TypedCompactLine({ line, index, sectionKojiType, onPatch, onDelete, onD
   );
 }
 
+/** 手机端：卡片式明細（纵向字段，更易读） */
+function MobileTypedLine({
+  line,
+  index,
+  sectionKojiType,
+  onPatch,
+  onDelete,
+  onDuplicate,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown
+}) {
+  const lineTypeId = getLineType(line, sectionKojiType);
+  const kt = getKojiType(lineTypeId);
+  const isAuto = !!kt.autoSuryo;
+  const suryo = isAuto ? kt.autoSuryo(line) : Number(line.suryo) || 0;
+  const amt = suryo * (Number(line.teika) || 0);
+  const dim = !line.active;
+  const hasSub = !!(line.maker || line.hinban || line.biko);
+  const invalid = line.active !== false && !(line.basho || "").trim();
+
+  const handlePatch = useCallback(
+    (patch) => {
+      if (isAuto && (patch.taisho1 !== undefined || patch.taisho2 !== undefined)) {
+        const merged = { ...line, ...patch };
+        patch.suryo = kt.autoSuryo(merged);
+      }
+      onPatch(patch);
+    },
+    [line, isAuto, kt, onPatch]
+  );
+
+  const handleTypeChange = useCallback(
+    (newTypeId) => {
+      const newKt = getKojiType(newTypeId);
+      const patch = { lineType: newTypeId, tani: newKt.defaultTani };
+      if (newKt.autoSuryo) patch.suryo = newKt.autoSuryo(line);
+      onPatch(patch);
+    },
+    [line, onPatch]
+  );
+
+  return (
+    <div
+      className={`mobile-line-card ${dim ? "mobile-line-dim" : ""} ${invalid ? "mobile-line-invalid" : ""}`}
+    >
+      <div className="mobile-line-head">
+        <span className="mobile-line-no">{index + 1}</span>
+        <select
+          className={`mobile-line-type line-type-${lineTypeId}`}
+          value={lineTypeId}
+          onChange={(e) => handleTypeChange(e.target.value)}
+        >
+          {KOJI_TYPES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <span className="mobile-line-amt num-font">{fmtYen(amt)}</span>
+        <label className="dx-switch mobile-line-switch">
+          <input type="checkbox" checked={line.active} onChange={() => onPatch({ active: !line.active })} />
+          <span className="dx-slider" />
+        </label>
+      </div>
+
+      <div className="mobile-line-fields">
+        {kt.fields.map((f) => (
+          <label key={f.key} className="mobile-field">
+            <span>{f.label}</span>
+            <input
+              type={f.type === "number" ? "number" : "text"}
+              className={`mobile-field-input ${f.type === "number" ? "num-font" : ""} ${f.key === "basho" ? "font-bold" : ""}`}
+              value={line[f.key]}
+              disabled={dim}
+              placeholder={f.label}
+              step={f.type === "number" ? "0.1" : undefined}
+              onChange={(e) => handlePatch({ [f.key]: e.target.value })}
+            />
+          </label>
+        ))}
+      </div>
+
+      <div className="mobile-line-qty">
+        <label className="mobile-field mobile-field-qty">
+          <span>数量</span>
+          {isAuto ? (
+            <div className="mobile-field-input num-font auto-suryo">{suryo || "0"}</div>
+          ) : (
+            <input
+              type="number"
+              className="mobile-field-input num-font"
+              value={line.suryo}
+              disabled={dim}
+              onChange={(e) => onPatch({ suryo: e.target.value })}
+            />
+          )}
+        </label>
+        <label className="mobile-field mobile-field-qty">
+          <span>単位</span>
+          <select
+            className="mobile-field-input"
+            value={line.tani}
+            disabled={dim}
+            onChange={(e) => onPatch({ tani: e.target.value })}
+          >
+            {TANI_OPTIONS.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="mobile-field mobile-field-qty">
+          <span>単価</span>
+          <input
+            type="number"
+            className="mobile-field-input num-font"
+            value={line.teika}
+            disabled={dim}
+            placeholder="0"
+            onChange={(e) => onPatch({ teika: e.target.value })}
+          />
+        </label>
+      </div>
+
+      <details className="mobile-line-extra" open={hasSub}>
+        <summary>メーカー・品番・備考</summary>
+        <div className="mobile-line-extra-grid">
+          <label className="mobile-field">
+            <span>メーカー</span>
+            <input
+              className="mobile-field-input"
+              value={line.maker}
+              disabled={dim}
+              onChange={(e) => onPatch({ maker: e.target.value })}
+            />
+          </label>
+          <label className="mobile-field">
+            <span>品番</span>
+            <input
+              className="mobile-field-input"
+              value={line.hinban}
+              disabled={dim}
+              onChange={(e) => onPatch({ hinban: e.target.value })}
+            />
+          </label>
+          <label className="mobile-field mobile-field-wide">
+            <span>備考</span>
+            <input
+              className="mobile-field-input"
+              value={line.biko}
+              disabled={dim}
+              onChange={(e) => onPatch({ biko: e.target.value })}
+            />
+          </label>
+        </div>
+      </details>
+
+      <div className="mobile-line-actions">
+        <button type="button" className="mobile-line-act" onClick={onMoveUp} disabled={!canMoveUp} title="上へ">
+          <i className="fa-solid fa-chevron-up" />
+        </button>
+        <button type="button" className="mobile-line-act" onClick={onMoveDown} disabled={!canMoveDown} title="下へ">
+          <i className="fa-solid fa-chevron-down" />
+        </button>
+        <button type="button" className="mobile-line-act" onClick={onDuplicate} title="複製">
+          <i className="fa-regular fa-copy" />
+        </button>
+        <button type="button" className="mobile-line-act danger" onClick={onDelete} title="削除">
+          <i className="fa-solid fa-trash" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MobileCommentRow({ line, onPatch, onDelete }) {
+  return (
+    <div className="mobile-comment-card">
+      <i className="fa-solid fa-comment-dots text-amber-500 shrink-0" />
+      <input
+        type="text"
+        className="mobile-comment-input"
+        value={line.text}
+        placeholder="※ コメント..."
+        onChange={(e) => onPatch({ text: e.target.value })}
+      />
+      <button type="button" className="mobile-line-act danger" onClick={onDelete}>
+        <i className="fa-solid fa-trash" />
+      </button>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════
    Comment Row
    ═══════════════════════════════════════════ */
@@ -368,10 +577,18 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
   const [dragIdx, setDragIdx] = useState(null);
   const [dropIdx, setDropIdx] = useState(null);
   const [undoState, setUndoState] = useState(null);
+  const [kojiDrawerOpen, setKojiDrawerOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const bottomRef = useRef(null);
   const undoTimerRef = useRef(null);
+  const isMobile = useIsMobile();
 
   const activeSec = sections.find((s) => s.id === activeSecId) || sections[0];
+
+  const selectSection = useCallback((secId) => {
+    setActiveSecId(secId);
+    if (isMobile) setKojiDrawerOpen(false);
+  }, [isMobile]);
 
   const allDetailLines = useMemo(() => sections.flatMap((s) => s.lines.filter(isDetailLine)), [sections]);
   const total = useMemo(() =>
@@ -637,46 +854,75 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
   }, [sections, propertyName, roomNo, total, tax, grand]);
 
   return (
-    <div className="flex flex-col h-screen h-[100dvh] bg-[#F0F2F5] overflow-hidden">
+    <div className="flex flex-col h-screen h-[100dvh] bg-[#F0F2F5] overflow-hidden editor-root">
       {/* Header */}
-      <header className="mobile-header bg-white border-b border-slate-200 px-3 py-2.5 flex items-center justify-between z-20 shrink-0">
-        <div className="flex items-center gap-3">
-          <button type="button" className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition text-sm" onClick={onBack}>
+      <header className="mobile-header editor-mobile-header bg-white border-b border-slate-200 px-3 py-2 flex items-center justify-between z-20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <button type="button" className="editor-icon-btn" onClick={onBack}>
             <i className="fa-solid fa-chevron-left" />
           </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-black text-slate-800">{propertyName}</span>
-              <span className="text-sm font-bold text-blue-600">{roomNo}</span>
-              {dirty && <span className="editor-dirty-dot" title="未保存" />}
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-sm font-black text-slate-800 truncate">{propertyName}</span>
+              <span className="text-sm font-bold text-blue-600 shrink-0">{roomNo}</span>
+              {dirty && <span className="editor-dirty-dot shrink-0" title="未保存" />}
             </div>
-            <span className="text-[10px] text-slate-400">{allDetailLines.length}件 · {sections.length}工事</span>
+            <span className="text-[10px] text-slate-400">{allDetailLines.length}件 · {fmtYen(grand)}</span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <div className="text-[10px] text-slate-400 leading-none">税込合計</div>
-            <div className="text-lg font-black num-font text-slate-900">{fmtYen(grand)}</div>
-            {lastSavedAt && <div className="text-[10px] text-slate-400 leading-none mt-0.5">保存: {lastSavedAt.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}</div>}
-          </div>
-          <button type="button" className="editor-tool-btn" onClick={exportXlsx} title="xlsx出力">
-            <i className="fa-solid fa-file-excel text-green-600" />
-          </button>
-          <button type="button"
-            className={`px-3.5 py-1.5 rounded-lg font-bold text-sm transition-all flex items-center gap-1.5 ${saved ? "bg-emerald-500 text-white" : "bg-slate-900 hover:bg-slate-800 text-white"}`}
-            onClick={handleSave}>
-            <i className={`fa-solid ${saved ? "fa-check" : "fa-save"}`} /> {saved ? "済" : "保存"}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {!isMobile && (
+            <>
+              <div className="text-right mr-1">
+                <div className="text-[10px] text-slate-400 leading-none">税込合計</div>
+                <div className="text-lg font-black num-font text-slate-900">{fmtYen(grand)}</div>
+              </div>
+              <button type="button" className="editor-tool-btn" onClick={exportXlsx} title="xlsx出力">
+                <i className="fa-solid fa-file-excel text-green-600" />
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            className={`editor-save-btn ${saved ? "is-saved" : ""}`}
+            onClick={handleSave}
+          >
+            <i className={`fa-solid ${saved ? "fa-check" : "fa-save"}`} />
+            {!isMobile && <span>{saved ? "済" : "保存"}</span>}
           </button>
         </div>
       </header>
 
+      {isMobile && activeSec && (
+        <button type="button" className="mobile-koji-toggle" onClick={() => setKojiDrawerOpen(true)}>
+          <i className="fa-solid fa-folder-tree text-blue-500" />
+          <span className="truncate font-bold">{activeSec.name || "工事"}</span>
+          <span className="mobile-koji-badge">{sections.length}</span>
+          <i className="fa-solid fa-chevron-down text-slate-400 text-xs" />
+        </button>
+      )}
+
+      {isMobile && kojiDrawerOpen && (
+        <button
+          type="button"
+          className="koji-drawer-overlay"
+          aria-label="閉じる"
+          onClick={() => setKojiDrawerOpen(false)}
+        />
+      )}
+
       {/* Main */}
       <div className="editor-layout flex flex-1 overflow-hidden min-h-0">
         {/* Left: Section List */}
-        <div className="koji-sidebar">
+        <div className={`koji-sidebar ${isMobile ? "koji-sidebar-drawer" : ""} ${kojiDrawerOpen ? "koji-sidebar-open" : ""}`}>
           <div className="koji-sidebar-title">
             <i className="fa-solid fa-folder-tree text-blue-500" />
             <span>工事項目</span>
+            {isMobile && (
+              <button type="button" className="koji-drawer-close" onClick={() => setKojiDrawerOpen(false)}>
+                <i className="fa-solid fa-xmark" />
+              </button>
+            )}
           </div>
           <div className="koji-sidebar-list">
             {sections.map((sec, idx) => {
@@ -691,7 +937,7 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
                   onDragEnd={handleDragEnd}
                   onDragLeave={handleDragLeave}
                   className={`koji-sidebar-item ${isActive ? "koji-sidebar-item-active" : ""} ${isDragging ? "koji-sidebar-dragging" : ""} ${isDropTarget ? "koji-sidebar-drop-target" : ""}`}
-                  onClick={() => setActiveSecId(sec.id)}>
+                  onClick={() => selectSection(sec.id)}>
                   <div className="koji-drag-handle" title="ドラッグで並び替え">
                     <i className="fa-solid fa-grip-vertical" />
                   </div>
@@ -723,48 +969,90 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
               );
             })}
           </div>
-          <button type="button" className="koji-sidebar-add" onClick={() => setShowTypePicker(true)}>
+          <button type="button" className="koji-sidebar-add" onClick={() => { setShowTypePicker(true); if (isMobile) setKojiDrawerOpen(false); }}>
             <i className="fa-solid fa-plus" /> 工事追加
           </button>
         </div>
 
         {/* Right: Detail Lines */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {activeSec ? (
             <>
               {/* Section header */}
               <div className="shrink-0">
-                <div className="estimate-title-bar">
-                  <span className="font-black">{activeSec.name || "工事"}</span>
-                  <AddLineMenu
-                    sectionKojiType={activeSec.kojiType}
-                    onAddLine={addLine}
-                    onAddComment={addComment}
-                  />
-                </div>
-                <div className="line-tools-bar">
-                  <div className="line-tools-left">
+                {!isMobile && (
+                  <div className="estimate-title-bar">
+                    <span className="font-black">{activeSec.name || "工事"}</span>
+                    <AddLineMenu
+                      sectionKojiType={activeSec.kojiType}
+                      onAddLine={addLine}
+                      onAddComment={addComment}
+                    />
+                  </div>
+                )}
+                {isMobile ? (
+                  <div className="mobile-editor-toolbar">
+                    <button type="button" className="mobile-toolbar-btn primary" onClick={() => addLine(activeSec.kojiType)}>
+                      <i className="fa-solid fa-plus" /> 明細
+                    </button>
+                    <button type="button" className="mobile-toolbar-btn" onClick={() => addComment()}>
+                      <i className="fa-solid fa-comment" />
+                    </button>
+                    <button type="button" className="mobile-toolbar-btn" onClick={() => setToolsOpen((v) => !v)}>
+                      <i className="fa-solid fa-filter" />
+                    </button>
+                    <button type="button" className="mobile-toolbar-btn" onClick={clearEmptyLines} title="空行整理">
+                      <i className="fa-solid fa-broom" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="line-tools-bar">
+                    <div className="line-tools-left">
+                      <input
+                        type="text"
+                        className="line-search-input"
+                        placeholder="明細検索（場所・内容・備考）"
+                        value={lineSearch}
+                        onChange={(e) => setLineSearch(e.target.value)}
+                      />
+                      <select
+                        className="line-filter-select"
+                        value={lineTypeFilter}
+                        onChange={(e) => setLineTypeFilter(e.target.value)}
+                      >
+                        <option value="all">全タイプ</option>
+                        {KOJI_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                      </select>
+                    </div>
+                    <button type="button" className="line-clean-btn" onClick={clearEmptyLines}>
+                      <i className="fa-solid fa-broom" /> 空行整理
+                    </button>
+                  </div>
+                )}
+                {isMobile && toolsOpen && (
+                  <div className="mobile-tools-panel">
                     <input
-                      type="text"
-                      className="line-search-input"
-                      placeholder="明細検索（場所・内容・備考）"
+                      type="search"
+                      className="mobile-search"
+                      placeholder="明細検索..."
                       value={lineSearch}
                       onChange={(e) => setLineSearch(e.target.value)}
                     />
                     <select
-                      className="line-filter-select"
+                      className="mobile-field-input"
                       value={lineTypeFilter}
                       onChange={(e) => setLineTypeFilter(e.target.value)}
                     >
                       <option value="all">全タイプ</option>
-                      {KOJI_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                      {KOJI_TYPES.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.label}
+                        </option>
+                      ))}
                     </select>
                   </div>
-                  <button type="button" className="line-clean-btn" onClick={clearEmptyLines}>
-                    <i className="fa-solid fa-broom" /> 空行整理
-                  </button>
-                </div>
-                {/* Summary for sections that have totalUnit */}
+                )}
+                {/* Summary for harikae */}
                 {(() => {
                   const defKt = getKojiType(activeSec.kojiType);
                   if (activeSec.kojiType !== "harikae") return null;
@@ -777,24 +1065,26 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
                           <span className="text-sm font-black num-font text-slate-800">{secTotalQty(activeSec, activeSec.kojiType).toFixed(1)}{defKt.totalUnit}</span>
                         </div>
                       </div>
-                      <div className="estimate-breakdown-header">
-                        <span className="estimate-uchiwake">【内訳】</span>
-                        <span className="compact-cell" style={{ flex: "1.5", minWidth: 80 }}>場所</span>
-                        <span className="compact-cell" style={{ flex: "1", minWidth: 55 }}>天井</span>
-                        <span className="compact-cell" style={{ flex: "1", minWidth: 55 }}>壁</span>
-                        <span style={{ width: 56 }}>数量</span>
-                        <span style={{ width: 44 }}>単位</span>
-                        <span style={{ width: 70 }}>単価</span>
-                        <span style={{ width: 80 }}>金額</span>
-                        <span style={{ width: 64 }} />
-                      </div>
+                      {!isMobile && (
+                        <div className="estimate-breakdown-header">
+                          <span className="estimate-uchiwake">【内訳】</span>
+                          <span className="compact-cell" style={{ flex: "1.5", minWidth: 80 }}>場所</span>
+                          <span className="compact-cell" style={{ flex: "1", minWidth: 55 }}>天井</span>
+                          <span className="compact-cell" style={{ flex: "1", minWidth: 55 }}>壁</span>
+                          <span style={{ width: 56 }}>数量</span>
+                          <span style={{ width: 44 }}>単位</span>
+                          <span style={{ width: 70 }}>単価</span>
+                          <span style={{ width: 80 }}>金額</span>
+                          <span style={{ width: 64 }} />
+                        </div>
+                      )}
                     </>
                   );
                 })()}
               </div>
 
-              {/* Lines — no fixed column headers since types vary per line */}
-              <div className="flex-1 overflow-y-auto bg-white">
+              {/* Lines */}
+              <div className={`flex-1 overflow-y-auto bg-white ${isMobile ? "mobile-lines-scroll" : ""}`}>
                 {visibleLines.length === 0 ? (
                   <div className="text-center py-16 text-slate-400">
                     <i className="fa-solid fa-clipboard text-3xl text-slate-200 mb-3" />
@@ -805,25 +1095,38 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
                     let detailIdx = 0;
                     return visibleLines.map((line) => {
                       if (line.type === "comment") {
-                        return (
-                          <CommentRow key={line.id} line={line}
+                        return isMobile ? (
+                          <MobileCommentRow
+                            key={line.id}
+                            line={line}
                             onPatch={(patch) => patchLine(line.id, patch)}
-                            onDelete={() => deleteLine(line.id)} />
+                            onDelete={() => deleteLine(line.id)}
+                          />
+                        ) : (
+                          <CommentRow
+                            key={line.id}
+                            line={line}
+                            onPatch={(patch) => patchLine(line.id, patch)}
+                            onDelete={() => deleteLine(line.id)}
+                          />
                         );
                       }
                       const idx = detailIdx++;
-                      return (
-                        <TypedCompactLine key={line.id} line={line} index={idx}
-                          sectionKojiType={activeSec.kojiType}
-                          onPatch={(patch) => patchLine(line.id, patch)}
-                          onDelete={() => deleteLine(line.id)}
-                          onDuplicate={() => duplicateLine(line.id)}
-                          onMoveUp={() => moveLine(line.id, -1)}
-                          onMoveDown={() => moveLine(line.id, 1)}
-                          canMoveUp={activeSec.lines.findIndex((l) => l.id === line.id) > 0}
-                          canMoveDown={activeSec.lines.findIndex((l) => l.id === line.id) < activeSec.lines.length - 1}
-                        />
-                      );
+                      const lineIdx = activeSec.lines.findIndex((l) => l.id === line.id);
+                      const common = {
+                        key: line.id,
+                        line,
+                        index: idx,
+                        sectionKojiType: activeSec.kojiType,
+                        onPatch: (patch) => patchLine(line.id, patch),
+                        onDelete: () => deleteLine(line.id),
+                        onDuplicate: () => duplicateLine(line.id),
+                        onMoveUp: () => moveLine(line.id, -1),
+                        onMoveDown: () => moveLine(line.id, 1),
+                        canMoveUp: lineIdx > 0,
+                        canMoveDown: lineIdx < activeSec.lines.length - 1
+                      };
+                      return isMobile ? <MobileTypedLine {...common} /> : <TypedCompactLine {...common} />;
                     });
                   })()
                 )}
@@ -839,9 +1142,21 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
       </div>
 
       {/* Bottom */}
-      <div className="bg-white border-t border-slate-200 px-4 py-2 shrink-0 flex items-center justify-end z-20 gap-3">
-        <span className="text-[11px] text-slate-400 num-font hidden sm:block">税抜 {fmtYen(total)} + 税 {fmtYen(tax)}</span>
-        <span className="text-xl font-black num-font text-slate-900">{fmtYen(grand)}</span>
+      <div className="editor-bottom-bar bg-white border-t border-slate-200 px-3 py-2 shrink-0 flex items-center justify-between z-20">
+        {isMobile ? (
+          <>
+            <button type="button" className="mobile-toolbar-btn" onClick={exportXlsx} title="Excel出力">
+              <i className="fa-solid fa-file-excel text-green-600" />
+            </button>
+            <span className="text-lg font-black num-font text-slate-900">{fmtYen(grand)}</span>
+            <span className="text-[10px] text-slate-400">税込</span>
+          </>
+        ) : (
+          <>
+            <span className="text-[11px] text-slate-400 num-font">税抜 {fmtYen(total)} + 税 {fmtYen(tax)}</span>
+            <span className="text-xl font-black num-font text-slate-900">{fmtYen(grand)}</span>
+          </>
+        )}
       </div>
 
       {undoState && (

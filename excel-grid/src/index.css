@@ -1767,6 +1767,7 @@ html, body, #root {
     padding: 0.625rem;
     margin-bottom: 0.5rem;
     box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+    overflow: visible;
   }
 
   .mobile-line-dim { opacity: 0.45; }
@@ -1921,14 +1922,8 @@ html, body, #root {
   }
 
   .preset-popover {
-    position: absolute;
-    right: 0;
-    bottom: calc(100% + 0.5rem);
-    z-index: 180;
     min-width: 11.5rem;
-    max-width: min(18rem, 92vw);
-    max-height: 16rem;
-    background: rgb(255 255 255 / 0.96);
+    background: rgb(255 255 255 / 0.98);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgb(148 163 184 / 0.35);
@@ -1938,6 +1933,23 @@ html, body, #root {
       0 2px 8px rgb(15 23 42 / 0.08);
     overflow: hidden;
     animation: presetPopoverIn 0.16s ease-out;
+  }
+
+  .preset-popover-fixed {
+    position: fixed;
+    z-index: 10050;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .preset-popover-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10040;
+    border: none;
+    background: rgb(15 23 42 / 0.12);
+    padding: 0;
+    margin: 0;
   }
 
   @keyframes presetPopoverIn {
@@ -1953,14 +1965,23 @@ html, body, #root {
 
   .preset-popover-arrow {
     position: absolute;
-    right: 0.875rem;
-    bottom: -0.375rem;
+    left: var(--preset-arrow-left, 1.5rem);
     width: 0.75rem;
     height: 0.75rem;
-    background: rgb(255 255 255 / 0.96);
+    background: rgb(255 255 255 / 0.98);
+    transform: rotate(45deg);
+  }
+
+  .preset-popover-above .preset-popover-arrow {
+    bottom: -0.375rem;
     border-right: 1px solid rgb(148 163 184 / 0.35);
     border-bottom: 1px solid rgb(148 163 184 / 0.35);
-    transform: rotate(45deg);
+  }
+
+  .preset-popover-below .preset-popover-arrow {
+    top: -0.375rem;
+    border-left: 1px solid rgb(148 163 184 / 0.35);
+    border-top: 1px solid rgb(148 163 184 / 0.35);
   }
 
   .preset-popover-header {
@@ -1974,7 +1995,8 @@ html, body, #root {
   }
 
   .preset-popover-list {
-    max-height: 11rem;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 0.25rem;

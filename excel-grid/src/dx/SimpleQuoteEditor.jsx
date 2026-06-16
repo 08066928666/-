@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { PresetInput, PresetFieldLabel } from "./mobile/PresetInput.jsx";
-import { getPresetsForField } from "./mobile/fieldPresets.js";
+import { getPresetsForField, getPickerMode, hasFieldPicker } from "./mobile/fieldPresets.js";
 
 function newId(prefix = "id") { return prefix + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7); }
 function fmtYen(n) { const v = Math.round(Number(n) || 0); return v > 0 ? `¥${v.toLocaleString("ja-JP")}` : "—"; }
@@ -347,9 +347,11 @@ function MobileTypedLine({
         {kt.fields.map((f) => {
           const presets = getPresetsForField(f.key);
           const isNumeric = f.type === "number";
+          const pickerMode = getPickerMode(f.key) || "preset";
+          const showPicker = hasFieldPicker(f.key);
           return (
             <label key={f.key} className="mobile-field">
-              <PresetFieldLabel label={f.label} hasPresets={presets.length > 0} numeric={isNumeric} />
+              <PresetFieldLabel label={f.label} hasPresets={showPicker} numeric={isNumeric} />
               <PresetInput
                 type={isNumeric ? "number" : "text"}
                 className={`mobile-field-input ${isNumeric ? "num-font" : ""} ${f.key === "basho" ? "font-bold" : ""}`}
@@ -359,6 +361,7 @@ function MobileTypedLine({
                 step={isNumeric ? "0.1" : undefined}
                 inputMode={isNumeric ? "decimal" : "text"}
                 presets={presets}
+                wheelMode={pickerMode}
                 pickerTitle={f.label}
                 onChange={(v) => handlePatch({ [f.key]: v })}
               />

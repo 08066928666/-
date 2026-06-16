@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { NumberWheelPicker } from "./NumberWheelPicker.jsx";
+import { DecimalWheelPicker, DECIMAL_WHEEL_POPOVER_HEIGHT } from "./DecimalWheelPicker.jsx";
+import { NumberWheelPicker, WHEEL_PICKER_HEIGHT } from "./NumberWheelPicker.jsx";
 
 const POPOVER_EST_HEIGHT = 240;
-const WHEEL_POPOVER_HEIGHT = 168;
 const VIEWPORT_PAD = 12;
 const GAP = 8;
 
@@ -73,7 +73,8 @@ export function PresetInput({
   className = "",
   inputMode,
   step,
-  pickerTitle = "よく使う値"
+  pickerTitle = "よく使う値",
+  wheelMode = "preset"
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState(null);
@@ -83,7 +84,11 @@ export function PresetInput({
   const inputRef = useRef(null);
   const keyboardModeRef = useRef(false);
   const hasPresets = Array.isArray(presets) && presets.length > 0;
-  const useWheelPicker = type === "number" && hasPresets;
+  const useDecimalWheel = type === "number" && wheelMode === "decimal";
+  const usePresetWheel = type === "number" && wheelMode === "preset" && hasPresets;
+  const useWheelPicker = useDecimalWheel || usePresetWheel;
+
+  const wheelPopoverHeight = useDecimalWheel ? DECIMAL_WHEEL_POPOVER_HEIGHT : WHEEL_PICKER_HEIGHT;
 
   const updatePosition = useCallback(() => {
     if (!triggerRef.current) return;
@@ -91,10 +96,10 @@ export function PresetInput({
       computePopoverStyle(
         triggerRef.current,
         popoverRef.current,
-        useWheelPicker ? WHEEL_POPOVER_HEIGHT : POPOVER_EST_HEIGHT
+        useWheelPicker ? wheelPopoverHeight : POPOVER_EST_HEIGHT
       )
     );
-  }, [useWheelPicker]);
+  }, [useWheelPicker, wheelPopoverHeight]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -128,14 +133,9 @@ export function PresetInput({
   };
 
   const openPicker = () => {
-    if (disabled || !hasPresets || !triggerRef.current) return;
-    setPos(
-      computePopoverStyle(
-        triggerRef.current,
-        null,
-        useWheelPicker ? WHEEL_POPOVER_HEIGHT : POPOVER_EST_HEIGHT
-      )
-    );
+    if (disabled || !triggerRef.current) return;
+    if (!useWheelPicker && !hasPresets) return;
+    setPos(computePopoverStyle(triggerRef.current, null, useWheelPicker ? wheelPopoverHeight : POPOVER_EST_HEIGHT));
     setOpen(true);
     try {
       navigator.vibrate?.(6);
@@ -167,7 +167,7 @@ export function PresetInput({
     openPicker();
   };
 
-  if (!hasPresets) {
+  if (!hasPresets && !useDecimalWheel) {
     return (
       <input
         type={type}
@@ -182,7 +182,9 @@ export function PresetInput({
     );
   }
 
-  const popoverWidth = useWheelPicker ? Math.min(220, window.innerWidth - VIEWPORT_PAD * 2) : pos?.width;
+  const popoverWidth = useWheelPicker
+    ? Math.min(useDecimalWheel ? 248 : 220, window.innerWidth - VIEWPORT_PAD * 2)
+    : pos?.width;
 
   const pickerPortal =
     open &&
@@ -192,7 +194,7 @@ export function PresetInput({
         <button type="button" className="preset-popover-backdrop" aria-label="閉じる" onClick={closePicker} />
         <div
           ref={popoverRef}
-          className={`preset-popover preset-popover-fixed preset-popover-${pos.placement} ${useWheelPicker ? "preset-wheel-popover" : ""}`}
+          className={`preset-popover preset-popover-fixed preset-popover-${pos.placement} ${useWheelPicker ? "preset-wheel-popover" : ""} ${useDecimalWheel ? "preset-decimal-popover" : ""}`}
           style={{
             top: pos.top,
             left: pos.left,
@@ -204,7 +206,22 @@ export function PresetInput({
           aria-label={pickerTitle}
         >
           <div className="preset-popover-arrow" />
-          {useWheelPicker ? (
+          {useDecimalWheel ? (
+            <>
+              <div className="preset-wheel-head">
+                <span className="preset-wheel-title">{pickerTitle}</span>
+                <button type="button" className="preset-wheel-close" aria-label="閉じる" onClick={closePicker}>
+                  <i className="fa-solid fa-xmark" />
+                </button>
+              </div>
+              <DecimalWheelPicker value={value ?? ""} onChange={onChange} ariaLabel={pickerTitle} unit="㎡" />
+              <div className="preset-wheel-foot">
+                <button type="button" className="preset-wheel-link" onClick={focusKeyboard}>
+                  直接入力
+                </button>
+              </div>
+            </>
+          ) : usePresetWheel ? (
             <>
               <div className="preset-wheel-head">
                 <span className="preset-wheel-title">{pickerTitle}</span>

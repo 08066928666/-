@@ -23,11 +23,16 @@ export const BASHO_PRESETS = [
 
 export const BUI_PRESETS = ["壁", "天井", "床", "建具", "巾木", "扉"];
 
-/** 数字ホイール共通 — 1〜100（天井・壁㎡） */
-export const NUMERIC_1_100_PRESETS = Array.from({ length: 100 }, (_, i) => String(i + 1));
+/** クロス㎡ — 整数 0〜100 + 小数 0.0〜0.9（双列ホイール） */
+export function getPickerMode(fieldKey) {
+  if (fieldKey === "taisho1" || fieldKey === "taisho2") return "decimal";
+  if (BY_KEY[fieldKey]?.length) return "preset";
+  return null;
+}
 
-export const CEILING_M2_PRESETS = NUMERIC_1_100_PRESETS;
-export const WALL_M2_PRESETS = NUMERIC_1_100_PRESETS;
+export function hasFieldPicker(fieldKey) {
+  return getPickerMode(fieldKey) != null;
+}
 
 export const MAKER_PRESETS = ["リリカラ", "サンゲツ", "トーソー", "東リ", "ルノン"];
 
@@ -59,8 +64,6 @@ export const TANKA_PRESETS = ["800", "1000", "1200", "1500", "2000"];
 const BY_KEY = {
   basho: BASHO_PRESETS,
   bui: BUI_PRESETS,
-  taisho1: CEILING_M2_PRESETS,
-  taisho2: WALL_M2_PRESETS,
   maker: MAKER_PRESETS,
   hinban: HINBAN_PRESETS,
   biko: BIKO_PRESETS,

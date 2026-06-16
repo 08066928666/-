@@ -1853,6 +1853,128 @@ html, body, #root {
     letter-spacing: 0.03em;
   }
 
+  .mobile-field-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem;
+  }
+
+  .mobile-field-hint {
+    font-size: 0.5625rem;
+    font-weight: 600;
+    color: #93c5fd;
+    text-transform: none;
+    letter-spacing: 0;
+    flex-shrink: 0;
+  }
+
+  .mobile-field-hint-inline {
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: #93c5fd;
+    margin-left: 0.375rem;
+  }
+
+  .mobile-field-input.has-presets {
+    background-image: linear-gradient(90deg, rgb(219 234 254 / 0.35), transparent 28%);
+  }
+
+  .preset-sheet-root {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .preset-sheet-overlay {
+    position: absolute;
+    inset: 0;
+    border: none;
+    background: rgb(15 23 42 / 0.45);
+    pointer-events: auto;
+  }
+
+  .preset-sheet {
+    position: relative;
+    width: 100%;
+    max-height: 70vh;
+    background: #fff;
+    border-radius: 1rem 1rem 0 0;
+    padding: 0.75rem 0.875rem calc(0.875rem + env(safe-area-inset-bottom, 0px));
+    pointer-events: auto;
+    animation: presetSheetUp 0.22s ease-out;
+    box-shadow: 0 -8px 32px rgb(15 23 42 / 0.15);
+  }
+
+  @keyframes presetSheetUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .preset-sheet-handle {
+    width: 2.5rem;
+    height: 0.25rem;
+    background: #e2e8f0;
+    border-radius: 999px;
+    margin: 0 auto 0.625rem;
+  }
+
+  .preset-sheet-title {
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: #0f172a;
+    text-align: center;
+  }
+
+  .preset-sheet-hint {
+    font-size: 0.6875rem;
+    color: #94a3b8;
+    text-align: center;
+    margin: 0.25rem 0 0.625rem;
+  }
+
+  .preset-sheet-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-height: 45vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+  }
+
+  .preset-sheet-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    padding: 0.5rem 0.875rem;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+
+  .preset-sheet-item.is-active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+  }
+
+  .preset-sheet-close {
+    width: 100%;
+    min-height: 2.75rem;
+    margin-top: 0.375rem;
+    border: none;
+    border-radius: 0.75rem;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
+
   .mobile-field-input {
     width: 100%;
     min-height: 2.125rem;

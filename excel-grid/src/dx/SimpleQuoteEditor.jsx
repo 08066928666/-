@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
+import { PresetInput, PresetFieldLabel } from "./mobile/PresetInput.jsx";
+import { getPresetsForField } from "./mobile/fieldPresets.js";
 
 function newId(prefix = "id") { return prefix + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7); }
 function fmtYen(n) { const v = Math.round(Number(n) || 0); return v > 0 ? `¥${v.toLocaleString("ja-JP")}` : "—"; }
@@ -342,25 +344,30 @@ function MobileTypedLine({
       </div>
 
       <div className="mobile-line-fields">
-        {kt.fields.map((f) => (
-          <label key={f.key} className="mobile-field">
-            <span>{f.label}</span>
-            <input
-              type={f.type === "number" ? "number" : "text"}
-              className={`mobile-field-input ${f.type === "number" ? "num-font" : ""} ${f.key === "basho" ? "font-bold" : ""}`}
-              value={line[f.key]}
-              disabled={dim}
-              placeholder={f.label}
-              step={f.type === "number" ? "0.1" : undefined}
-              onChange={(e) => handlePatch({ [f.key]: e.target.value })}
-            />
-          </label>
-        ))}
+        {kt.fields.map((f) => {
+          const presets = getPresetsForField(f.key);
+          return (
+            <label key={f.key} className="mobile-field">
+              <PresetFieldLabel label={f.label} hasPresets={presets.length > 0} />
+              <PresetInput
+                type={f.type === "number" ? "number" : "text"}
+                className={`mobile-field-input ${f.type === "number" ? "num-font" : ""} ${f.key === "basho" ? "font-bold" : ""}`}
+                value={line[f.key]}
+                disabled={dim}
+                placeholder={f.label}
+                step={f.type === "number" ? "0.1" : undefined}
+                inputMode={f.type === "number" ? "decimal" : "text"}
+                presets={presets}
+                onChange={(v) => handlePatch({ [f.key]: v })}
+              />
+            </label>
+          );
+        })}
       </div>
 
       <div className="mobile-line-qty">
         <label className="mobile-field mobile-field-qty">
-          <span>数量</span>
+          <PresetFieldLabel label="数量" hasPresets={false} />
           {isAuto ? (
             <div className="mobile-field-input num-font auto-suryo">{suryo || "0"}</div>
           ) : (
@@ -374,7 +381,7 @@ function MobileTypedLine({
           )}
         </label>
         <label className="mobile-field mobile-field-qty">
-          <span>単位</span>
+          <PresetFieldLabel label="単位" hasPresets={false} />
           <select
             className="mobile-field-input"
             value={line.tani}
@@ -389,46 +396,53 @@ function MobileTypedLine({
           </select>
         </label>
         <label className="mobile-field mobile-field-qty">
-          <span>単価</span>
-          <input
+          <PresetFieldLabel label="単価" hasPresets={getPresetsForField("teika").length > 0} />
+          <PresetInput
             type="number"
             className="mobile-field-input num-font"
             value={line.teika}
             disabled={dim}
             placeholder="0"
-            onChange={(e) => onPatch({ teika: e.target.value })}
+            presets={getPresetsForField("teika")}
+            onChange={(v) => onPatch({ teika: v })}
           />
         </label>
       </div>
 
       <details className="mobile-line-extra" open={hasSub}>
-        <summary>メーカー・品番・備考</summary>
+        <summary>
+          メーカー・品番・備考
+          <span className="mobile-field-hint-inline">長押しで選択</span>
+        </summary>
         <div className="mobile-line-extra-grid">
           <label className="mobile-field">
-            <span>メーカー</span>
-            <input
+            <PresetFieldLabel label="メーカー" hasPresets={getPresetsForField("maker").length > 0} />
+            <PresetInput
               className="mobile-field-input"
               value={line.maker}
               disabled={dim}
-              onChange={(e) => onPatch({ maker: e.target.value })}
+              presets={getPresetsForField("maker")}
+              onChange={(v) => onPatch({ maker: v })}
             />
           </label>
           <label className="mobile-field">
-            <span>品番</span>
-            <input
+            <PresetFieldLabel label="品番" hasPresets={getPresetsForField("hinban").length > 0} />
+            <PresetInput
               className="mobile-field-input"
               value={line.hinban}
               disabled={dim}
-              onChange={(e) => onPatch({ hinban: e.target.value })}
+              presets={getPresetsForField("hinban")}
+              onChange={(v) => onPatch({ hinban: v })}
             />
           </label>
           <label className="mobile-field mobile-field-wide">
-            <span>備考</span>
-            <input
+            <PresetFieldLabel label="備考" hasPresets={getPresetsForField("biko").length > 0} />
+            <PresetInput
               className="mobile-field-input"
               value={line.biko}
               disabled={dim}
-              onChange={(e) => onPatch({ biko: e.target.value })}
+              presets={getPresetsForField("biko")}
+              onChange={(v) => onPatch({ biko: v })}
             />
           </label>
         </div>
@@ -453,15 +467,17 @@ function MobileTypedLine({
 }
 
 function MobileCommentRow({ line, onPatch, onDelete }) {
+  const presets = getPresetsForField("comment");
   return (
     <div className="mobile-comment-card">
       <i className="fa-solid fa-comment-dots text-amber-500 shrink-0" />
-      <input
+      <PresetInput
         type="text"
         className="mobile-comment-input"
         value={line.text}
-        placeholder="※ コメント..."
-        onChange={(e) => onPatch({ text: e.target.value })}
+        placeholder="※ コメント...（長押しで選択）"
+        presets={presets}
+        onChange={(v) => onPatch({ text: v })}
       />
       <button type="button" className="mobile-line-act danger" onClick={onDelete}>
         <i className="fa-solid fa-trash" />

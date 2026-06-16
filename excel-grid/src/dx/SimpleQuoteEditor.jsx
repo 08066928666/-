@@ -346,18 +346,20 @@ function MobileTypedLine({
       <div className="mobile-line-fields">
         {kt.fields.map((f) => {
           const presets = getPresetsForField(f.key);
+          const isNumeric = f.type === "number";
           return (
             <label key={f.key} className="mobile-field">
-              <PresetFieldLabel label={f.label} hasPresets={presets.length > 0} />
+              <PresetFieldLabel label={f.label} hasPresets={presets.length > 0} numeric={isNumeric} />
               <PresetInput
-                type={f.type === "number" ? "number" : "text"}
-                className={`mobile-field-input ${f.type === "number" ? "num-font" : ""} ${f.key === "basho" ? "font-bold" : ""}`}
+                type={isNumeric ? "number" : "text"}
+                className={`mobile-field-input ${isNumeric ? "num-font" : ""} ${f.key === "basho" ? "font-bold" : ""}`}
                 value={line[f.key]}
                 disabled={dim}
                 placeholder={f.label}
-                step={f.type === "number" ? "0.1" : undefined}
-                inputMode={f.type === "number" ? "decimal" : "text"}
+                step={isNumeric ? "0.1" : undefined}
+                inputMode={isNumeric ? "decimal" : "text"}
                 presets={presets}
+                pickerTitle={f.label}
                 onChange={(v) => handlePatch({ [f.key]: v })}
               />
             </label>
@@ -396,7 +398,7 @@ function MobileTypedLine({
           </select>
         </label>
         <label className="mobile-field mobile-field-qty">
-          <PresetFieldLabel label="単価" hasPresets={getPresetsForField("teika").length > 0} />
+          <PresetFieldLabel label="単価" hasPresets={getPresetsForField("teika").length > 0} numeric />
           <PresetInput
             type="number"
             className="mobile-field-input num-font"
@@ -404,6 +406,7 @@ function MobileTypedLine({
             disabled={dim}
             placeholder="0"
             presets={getPresetsForField("teika")}
+            pickerTitle="単価"
             onChange={(v) => onPatch({ teika: v })}
           />
         </label>

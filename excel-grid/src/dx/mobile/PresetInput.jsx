@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { NumberWheelPicker } from "./NumberWheelPicker.jsx";
 
 const POPOVER_EST_HEIGHT = 240;
 const VIEWPORT_PAD = 12;
@@ -59,7 +60,7 @@ function computePopoverStyle(triggerEl, popoverEl) {
 }
 
 /**
- * 输入框右侧按钮 → iOS 风格预设弹层（fixed + portal，避免被卡片裁剪）
+ * 输入框右侧按钮 → 文字预设为列表弹层，数字预设为 iOS タイマー风滚轮
  */
 export function PresetInput({
   value,
@@ -70,14 +71,18 @@ export function PresetInput({
   placeholder = "",
   className = "",
   inputMode,
-  step
+  step,
+  pickerTitle = "よく使う値"
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState(null);
   const wrapRef = useRef(null);
   const triggerRef = useRef(null);
   const popoverRef = useRef(null);
+  const inputRef = useRef(null);
+  const keyboardModeRef = useRef(false);
   const hasPresets = Array.isArray(presets) && presets.length > 0;
+  const useWheelPicker = type === "number" && hasPresets;
 
   const updatePosition = useCallback(() => {
     if (!triggerRef.current) return;
@@ -85,13 +90,13 @@ export function PresetInput({
   }, []);
 
   useLayoutEffect(() => {
-    if (!open) return;
+    if (!open || useWheelPicker) return;
     updatePosition();
     requestAnimationFrame(updatePosition);
-  }, [open, presets.length, updatePosition]);
+  }, [open, presets.length, updatePosition, useWheelPicker]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || useWheelPicker) return;
     const onReflow = () => updatePosition();
     window.addEventListener("resize", onReflow);
     window.addEventListener("scroll", onReflow, true);
@@ -103,29 +108,63 @@ export function PresetInput({
       window.visualViewport?.removeEventListener("resize", onReflow);
       window.visualViewport?.removeEventListener("scroll", onReflow);
     };
-  }, [open, updatePosition]);
+  }, [open, updatePosition, useWheelPicker]);
+
+  useEffect(() => {
+    if (!open || !useWheelPicker) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open, useWheelPicker]);
+
+  const closePicker = () => {
+    setOpen(false);
+    setPos(null);
+  };
 
   const selectPreset = (v) => {
     onChange(v);
-    setOpen(false);
+    closePicker();
   };
 
-  const toggleOpen = () => {
+  const openPicker = () => {
     if (disabled || !hasPresets) return;
-    setOpen((v) => {
-      const next = !v;
-      if (next && triggerRef.current) {
-        setPos(computePopoverStyle(triggerRef.current, null));
-      } else if (!next) {
-        setPos(null);
-      }
-      return next;
-    });
+    if (useWheelPicker) {
+      setOpen(true);
+    } else if (triggerRef.current) {
+      setPos(computePopoverStyle(triggerRef.current, null));
+      setOpen(true);
+    }
     try {
       navigator.vibrate?.(8);
     } catch {
       /* ignore */
     }
+  };
+
+  const toggleOpen = () => {
+    if (open) closePicker();
+    else openPicker();
+  };
+
+  const focusKeyboard = () => {
+    keyboardModeRef.current = true;
+    closePicker();
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select?.();
+      window.setTimeout(() => {
+        keyboardModeRef.current = false;
+      }, 400);
+    });
+  };
+
+  const handleNumericFocus = (e) => {
+    if (!useWheelPicker || keyboardModeRef.current) return;
+    e.target.blur();
+    openPicker();
   };
 
   if (!hasPresets) {
@@ -143,17 +182,13 @@ export function PresetInput({
     );
   }
 
-  const popover =
+  const listPopover =
     open &&
+    !useWheelPicker &&
     pos &&
     createPortal(
       <>
-        <button
-          type="button"
-          className="preset-popover-backdrop"
-          aria-label="閉じる"
-          onClick={() => setOpen(false)}
-        />
+        <button type="button" className="preset-popover-backdrop" aria-label="閉じる" onClick={closePicker} />
         <div
           ref={popoverRef}
           className={`preset-popover preset-popover-fixed preset-popover-${pos.placement}`}
@@ -165,10 +200,10 @@ export function PresetInput({
             "--preset-arrow-left": `${pos.arrowLeft}px`
           }}
           role="listbox"
-          aria-label="よく使う値"
+          aria-label={pickerTitle}
         >
           <div className="preset-popover-arrow" />
-          <div className="preset-popover-header">よく使う値</div>
+          <div className="preset-popover-header">{pickerTitle}</div>
           <div className="preset-popover-list">
             {presets.map((p) => (
               <button
@@ -189,10 +224,45 @@ export function PresetInput({
       document.body
     );
 
+  const wheelSheet =
+    open &&
+    useWheelPicker &&
+    createPortal(
+      <>
+        <button type="button" className="preset-sheet-backdrop" aria-label="閉じる" onClick={closePicker} />
+        <div className="preset-sheet" role="dialog" aria-label={pickerTitle}>
+          <div className="preset-sheet-handle" aria-hidden="true" />
+          <div className="preset-sheet-header">
+            <button type="button" className="preset-sheet-cancel" onClick={closePicker}>
+              キャンセル
+            </button>
+            <span className="preset-sheet-title">{pickerTitle}</span>
+            <button type="button" className="preset-sheet-done" onClick={closePicker}>
+              完了
+            </button>
+          </div>
+          <NumberWheelPicker
+            options={presets}
+            value={value ?? ""}
+            onChange={onChange}
+            ariaLabel={pickerTitle}
+          />
+          <div className="preset-sheet-foot">
+            <button type="button" className="preset-sheet-keyboard" onClick={focusKeyboard}>
+              キーボードで入力
+            </button>
+            <span>上下スクロールで選択</span>
+          </div>
+        </div>
+      </>,
+      document.body
+    );
+
   return (
     <>
-      <div className={`preset-input-wrap ${open ? "is-open" : ""}`} ref={wrapRef}>
+      <div className={`preset-input-wrap ${open ? "is-open" : ""} ${useWheelPicker ? "has-wheel" : ""}`} ref={wrapRef}>
         <input
+          ref={inputRef}
           type={type}
           className={`preset-input-field ${className}`.trim()}
           value={value ?? ""}
@@ -200,30 +270,34 @@ export function PresetInput({
           placeholder={placeholder}
           inputMode={inputMode}
           step={step}
+          onFocus={useWheelPicker ? handleNumericFocus : undefined}
           onChange={(e) => onChange(e.target.value)}
         />
         <button
           ref={triggerRef}
           type="button"
-          className="preset-trigger-btn"
+          className={`preset-trigger-btn ${useWheelPicker ? "preset-trigger-wheel" : ""}`}
           disabled={disabled}
-          aria-label="よく使う値から選択"
+          aria-label={useWheelPicker ? "数字ホイールで選択" : "よく使う値から選択"}
           aria-expanded={open}
           onClick={toggleOpen}
         >
-          <i className="fa-solid fa-bars-staggered" />
+          <i className={useWheelPicker ? "fa-solid fa-circle-dot" : "fa-solid fa-bars-staggered"} />
         </button>
       </div>
-      {popover}
+      {listPopover}
+      {wheelSheet}
     </>
   );
 }
 
-export function PresetFieldLabel({ label, hasPresets }) {
+export function PresetFieldLabel({ label, hasPresets, numeric = false }) {
   return (
     <span className="mobile-field-label-row">
       <span>{label}</span>
-      {hasPresets ? <span className="mobile-field-hint">▤ 選択</span> : null}
+      {hasPresets ? (
+        <span className="mobile-field-hint">{numeric ? "◎ 回転選択" : "▤ 選択"}</span>
+      ) : null}
     </span>
   );
 }

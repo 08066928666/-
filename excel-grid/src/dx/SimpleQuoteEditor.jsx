@@ -4,6 +4,7 @@ import { PresetInput, PresetFieldLabel } from "./mobile/PresetInput.jsx";
 import { getPresetsForField, getPickerMode, hasFieldPicker } from "./mobile/fieldPresets.js";
 import { calcLineAmount, calcLineSuryo, computeQuoteTotals } from "./quoteTotals.js";
 import { fmtDate } from "./propertyShared.js";
+import { GenbashoImportModal } from "./mobile/GenbashoImportModal.jsx";
 
 function newId(prefix = "id") { return prefix + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7); }
 function fmtYen(n) { const v = Math.round(Number(n) || 0); return v > 0 ? `¥${v.toLocaleString("ja-JP")}` : "—"; }
@@ -575,7 +576,15 @@ function AddLineMenu({ sectionKojiType, onAddLine, onAddComment }) {
 /* ═══════════════════════════════════════════
    SimpleQuoteEditor — Left: 工事 / Right: 明細
    ═══════════════════════════════════════════ */
-export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, onSave, onBack }) {
+export function SimpleQuoteEditor({
+  propertyName,
+  roomNo,
+  lines: initialLines,
+  onSave,
+  onBack,
+  onMarkDone,
+  roomStatus = "pending"
+}) {
   const [sections, setSections] = useState(() => {
     if (Array.isArray(initialLines) && initialLines.length > 0 && initialLines[0]?.lines) {
       return initialLines.map((s) => normalizeSection(s));
@@ -597,6 +606,8 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
   const [undoState, setUndoState] = useState(null);
   const [kojiDrawerOpen, setKojiDrawerOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [genbashoOpen, setGenbashoOpen] = useState(false);
+  const [saveToast, setSaveToast] = useState("");
   const bottomRef = useRef(null);
   const undoTimerRef = useRef(null);
   const isMobile = useIsMobile();
@@ -794,8 +805,55 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
     setSaved(true);
     setDirty(false);
     setLastSavedAt(new Date());
+    setSaveToast("見積を保存しました");
     setTimeout(() => setSaved(false), 2500);
+    setTimeout(() => setSaveToast(""), 2800);
   }, [sections, onSave]);
+
+  const handleMarkDone = useCallback(() => {
+    if (dirty) {
+      onSave(sections);
+      setDirty(false);
+      setLastSavedAt(new Date());
+    }
+    onMarkDone?.(sections);
+    setSaveToast("見積を確定しました");
+    setTimeout(() => setSaveToast(""), 2800);
+  }, [dirty, sections, onSave, onMarkDone]);
+
+  const applyGenbashoSections = useCallback((importedSections) => {
+    if (!importedSections?.length) return;
+    let firstSecId = activeSecId;
+    setSections((prev) => {
+      const normalized = importedSections.map((s) => normalizeSection(s));
+      const merged = [...prev];
+      for (const sec of normalized) {
+        const idx = merged.findIndex(
+          (s) => s.kojiType === sec.kojiType && normalizeSectionName(s.name) === normalizeSectionName(sec.name)
+        );
+        if (idx >= 0) {
+          merged[idx] = {
+            ...merged[idx],
+            lines: [...merged[idx].lines.filter((l) => l.type === "comment" || (l.basho || "").trim()), ...sec.lines]
+          };
+          if (!firstSecId || firstSecId === activeSecId) firstSecId = merged[idx].id;
+        } else {
+          merged.push(sec);
+          if (!firstSecId || firstSecId === activeSecId) firstSecId = sec.id;
+        }
+      }
+      return merged.map((s) => normalizeSection(s));
+    });
+    setActiveSecId(firstSecId);
+    setSaved(false);
+    setDirty(true);
+    setSaveToast(`${importedSections.length} 工事を取込しました`);
+    setTimeout(() => setSaveToast(""), 2800);
+  }, [activeSecId]);
+
+  function normalizeSectionName(s) {
+    return String(s ?? "").trim().replace(/[　\s]+/g, "").replace(/張替/g, "張替");
+  }
 
   const handleBack = useCallback(() => {
     if (dirty && !window.confirm("変更が保存されていません。保存せずに戻りますか？")) return;
@@ -894,6 +952,9 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
         <div className="flex items-center gap-1.5 shrink-0">
           {!isMobile && (
             <>
+              <button type="button" className="editor-tool-btn" onClick={() => setGenbashoOpen(true)} title="原紙見積取込">
+                <i className="fa-solid fa-file-import text-blue-600" />
+              </button>
               <div className="text-right mr-1">
                 <div className="text-[10px] text-slate-400 leading-none">税込合計</div>
                 <div className="text-lg font-black num-font text-slate-900">{fmtYen(grand)}</div>
@@ -902,6 +963,17 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
                 <i className="fa-solid fa-file-excel text-green-600" />
               </button>
             </>
+          )}
+          {onMarkDone && roomStatus !== "done" && (
+            <button type="button" className="editor-done-btn" onClick={handleMarkDone} title="見積確定">
+              <i className="fa-solid fa-circle-check" />
+              <span>{isMobile ? "確定" : "見積確定"}</span>
+            </button>
+          )}
+          {roomStatus === "done" && (
+            <span className="editor-done-badge">
+              <i className="fa-solid fa-check" /> 完了
+            </span>
           )}
           <button
             type="button"
@@ -1013,17 +1085,22 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
                 )}
                 {isMobile ? (
                   <div className="mobile-editor-toolbar">
-                    <button type="button" className="mobile-toolbar-btn primary" onClick={() => addLine(activeSec.kojiType)}>
-                      <i className="fa-solid fa-plus" /> 明細
-                    </button>
-                    <button type="button" className="mobile-toolbar-btn" onClick={() => addComment()}>
-                      <i className="fa-solid fa-comment" />
+                    <AddLineMenu
+                      sectionKojiType={activeSec.kojiType}
+                      onAddLine={addLine}
+                      onAddComment={addComment}
+                    />
+                    <button type="button" className="mobile-toolbar-btn" onClick={() => setGenbashoOpen(true)}>
+                      <i className="fa-solid fa-file-import" />
+                      <span className="mobile-toolbar-label">取込</span>
                     </button>
                     <button type="button" className="mobile-toolbar-btn" onClick={() => setToolsOpen((v) => !v)}>
                       <i className="fa-solid fa-filter" />
+                      <span className="mobile-toolbar-label">検索</span>
                     </button>
                     <button type="button" className="mobile-toolbar-btn" onClick={clearEmptyLines} title="空行整理">
                       <i className="fa-solid fa-broom" />
+                      <span className="mobile-toolbar-label">整理</span>
                     </button>
                   </div>
                 ) : (
@@ -1168,6 +1245,7 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
           <>
             <button type="button" className="mobile-toolbar-btn" onClick={exportXlsx} title="Excel出力">
               <i className="fa-solid fa-file-excel text-green-600" />
+              <span className="mobile-toolbar-label">Excel</span>
             </button>
             <span className="text-lg font-black num-font text-slate-900">{fmtYen(grand)}</span>
             <span className="text-[10px] text-slate-400">税込</span>
@@ -1190,6 +1268,19 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
           </button>
         </div>
       )}
+
+      {saveToast && (
+        <div className="save-toast">
+          <i className="fa-solid fa-circle-check text-emerald-500" />
+          <span>{saveToast}</span>
+        </div>
+      )}
+
+      <GenbashoImportModal
+        open={genbashoOpen}
+        onClose={() => setGenbashoOpen(false)}
+        onApply={applyGenbashoSections}
+      />
 
       {showTypePicker && (
         <TypePicker onSelect={handleAddSection} onClose={() => setShowTypePicker(false)} />

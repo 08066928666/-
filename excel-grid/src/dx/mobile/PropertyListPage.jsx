@@ -99,6 +99,7 @@ export function PropertyListPage({ properties, onPropertiesChange, onSelectPrope
                           {doneCount > 0 ? ` · ${doneCount} 完了` : ""}
                         </div>
                         <div className="mobile-prop-amount num-font">{fmtYen(total)}</div>
+                        <div className="mobile-prop-amount-hint">税込</div>
                       </>
                     )}
                   </div>

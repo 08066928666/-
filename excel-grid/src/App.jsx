@@ -60,6 +60,26 @@ function saveQuote(roomId, lines) {
   }
 }
 
+function parseRouteHash() {
+  const hash = window.location.hash.replace(/^#/, "") || "/";
+  const parts = hash.split("/").filter(Boolean);
+  if (parts[0] === "property" && parts[1]) {
+    return { screen: "property-detail", propertyId: parts[1] };
+  }
+  if (parts[0] === "editor" && parts[1] && parts[2]) {
+    return { screen: "editor", propertyId: parts[1], roomId: parts[2] };
+  }
+  return { screen: "properties" };
+}
+
+function setRouteHash(screen, propertyId, roomId) {
+  let hash = "/";
+  if (screen === "property-detail" && propertyId) hash = `/property/${propertyId}`;
+  else if (screen === "editor" && propertyId && roomId) hash = `/editor/${propertyId}/${roomId}`;
+  const next = `#${hash}`;
+  if (window.location.hash !== next) window.location.hash = next;
+}
+
 function LoginScreen({ onLogin }) {
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
@@ -139,7 +159,6 @@ export default function App() {
     }
   });
 
-  /** @type {['properties' | 'property-detail' | 'editor']} */
   const [screen, setScreen] = useState("properties");
   const [properties, setProperties] = useState(loadProperties);
   const [activePropertyId, setActivePropertyId] = useState(null);
@@ -150,9 +169,54 @@ export default function App() {
     saveProperties(properties);
   }, [properties]);
 
+  useEffect(() => {
+    if (!authed) return;
+    const syncFromHash = () => {
+      const route = parseRouteHash();
+      if (route.screen === "properties") {
+        setScreen("properties");
+        setActivePropertyId(null);
+        setActiveRoom(null);
+        return;
+      }
+      const prop = properties.find((p) => p.id === route.propertyId);
+      if (!prop) {
+        setRouteHash("properties");
+        return;
+      }
+      if (route.screen === "property-detail") {
+        setActivePropertyId(route.propertyId);
+        setActiveRoom(null);
+        setScreen("property-detail");
+        return;
+      }
+      if (route.screen === "editor") {
+        const room = prop.rooms.find((r) => r.id === route.roomId);
+        if (!room) {
+          setRouteHash("property-detail", route.propertyId);
+          return;
+        }
+        setActivePropertyId(route.propertyId);
+        setActiveRoom({
+          propertyId: route.propertyId,
+          propertyName: prop.name,
+          roomId: route.roomId,
+          roomNo: room.roomNo,
+          status: room.status
+        });
+        setQuoteLines(loadQuote(route.roomId));
+        setScreen("editor");
+      }
+    };
+    syncFromHash();
+    window.addEventListener("hashchange", syncFromHash);
+    return () => window.removeEventListener("hashchange", syncFromHash);
+  }, [authed, properties]);
+
   const handleLogin = useCallback((name) => {
     setUserName(name);
     setAuthed(true);
+    setRouteHash("properties");
   }, []);
 
   const handleLogout = useCallback(() => {
@@ -166,11 +230,13 @@ export default function App() {
     setScreen("properties");
     setActivePropertyId(null);
     setActiveRoom(null);
+    window.location.hash = "#/";
   }, []);
 
   const openProperty = useCallback((propertyId) => {
     setActivePropertyId(propertyId);
     setScreen("property-detail");
+    setRouteHash("property-detail", propertyId);
   }, []);
 
   const openRoom = useCallback(
@@ -179,21 +245,32 @@ export default function App() {
       const room = prop?.rooms.find((r) => r.id === roomId);
       if (!prop || !room) return;
       setActivePropertyId(propertyId);
-      setActiveRoom({ propertyId, propertyName: prop.name, roomId, roomNo: room.roomNo });
+      setActiveRoom({
+        propertyId,
+        propertyName: prop.name,
+        roomId,
+        roomNo: room.roomNo,
+        status: room.status
+      });
       setQuoteLines(loadQuote(roomId));
       setScreen("editor");
+      setRouteHash("editor", propertyId, roomId);
     },
     [properties]
   );
 
-  const handleSaveQuote = useCallback(
-    (sections) => {
+  const updateRoomFromQuote = useCallback(
+    (sections, statusOverride) => {
       if (!activeRoom) return;
       saveQuote(activeRoom.roomId, sections);
       setQuoteLines(sections);
       const allLines = Array.isArray(sections) ? sections.flatMap((s) => s.lines || []) : [];
       const { grand } = computeQuoteTotals(sections);
       const detailCount = allLines.filter((l) => l?.type !== "comment").length;
+      let status = statusOverride;
+      if (!status) {
+        status = detailCount > 0 ? "draft" : "pending";
+      }
       setProperties((prev) =>
         prev.map((p) =>
           p.id !== activeRoom.propertyId
@@ -205,7 +282,7 @@ export default function App() {
                     ? r
                     : {
                         ...r,
-                        status: detailCount > 0 ? "draft" : "pending",
+                        status,
                         total: grand,
                         updatedAt: new Date().toISOString()
                       }
@@ -213,16 +290,37 @@ export default function App() {
               }
         )
       );
+      setActiveRoom((prev) => (prev ? { ...prev, status } : prev));
     },
     [activeRoom]
   );
 
+  const handleSaveQuote = useCallback(
+    (sections) => {
+      updateRoomFromQuote(sections);
+    },
+    [updateRoomFromQuote]
+  );
+
+  const handleMarkDone = useCallback(
+    (sections) => {
+      updateRoomFromQuote(sections, "done");
+    },
+    [updateRoomFromQuote]
+  );
+
   const handleBackFromEditor = useCallback(() => {
+    if (activeRoom?.propertyId) {
+      setRouteHash("property-detail", activeRoom.propertyId);
+    } else {
+      setRouteHash("properties");
+    }
     setScreen("property-detail");
     setActiveRoom(null);
-  }, []);
+  }, [activeRoom]);
 
   const handleBackFromProperty = useCallback(() => {
+    setRouteHash("properties");
     setScreen("properties");
     setActivePropertyId(null);
   }, []);
@@ -237,6 +335,8 @@ export default function App() {
         lines={quoteLines}
         onSave={handleSaveQuote}
         onBack={handleBackFromEditor}
+        onMarkDone={handleMarkDone}
+        roomStatus={activeRoom.status || "pending"}
         userName={userName}
       />
     );

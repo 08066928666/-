@@ -1,6 +1,5 @@
-/** 手机端明細字段 — 点击 ▤ 预设（常见值） */
+/** 手机端明細字段 — 点击 ▤ / ↕ 预设 */
 
-/** 場所 — クロス貼替で実見積に多い名称 */
 export const BASHO_PRESETS = [
   "洋室",
   "洋室（左）",
@@ -23,15 +22,15 @@ export const BASHO_PRESETS = [
 
 export const BUI_PRESETS = ["壁", "天井", "床", "建具", "巾木", "扉"];
 
-/** クロス㎡ — 整数 0〜100 + 小数 0.0〜0.9（双列ホイール） */
-export function getPickerMode(fieldKey) {
-  if (fieldKey === "taisho1" || fieldKey === "taisho2") return "decimal";
+/** 張替の天井/壁㎡のみ小数ホイール */
+export function getPickerMode(fieldKey, lineTypeId = "other") {
+  if (lineTypeId === "harikae" && (fieldKey === "taisho1" || fieldKey === "taisho2")) return "decimal";
   if (BY_KEY[fieldKey]?.length) return "preset";
   return null;
 }
 
-export function hasFieldPicker(fieldKey) {
-  return getPickerMode(fieldKey) != null;
+export function hasFieldPicker(fieldKey, lineTypeId = "other") {
+  return getPickerMode(fieldKey, lineTypeId) != null;
 }
 
 export const MAKER_PRESETS = ["リリカラ", "サンゲツ", "トーソー", "東リ", "ルノン"];
@@ -58,7 +57,6 @@ export const COMMENT_PRESETS = [
   "※オーナー様ご要望"
 ];
 
-/** クロス貼替の実見積では 800 が最多、原紙は 1000 もあり */
 export const TANKA_PRESETS = ["800", "1000", "1200", "1500", "2000"];
 
 const BY_KEY = {

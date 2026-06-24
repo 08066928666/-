@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { PropertyListPage } from "./dx/mobile/PropertyListPage.jsx";
 import { PropertyDetailPage } from "./dx/mobile/PropertyDetailPage.jsx";
 import { SimpleQuoteEditor } from "./dx/SimpleQuoteEditor.jsx";
+import { computeQuoteTotals } from "./dx/quoteTotals.js";
 
 const AUTH_KEY = "haseko-app-auth-v1";
 const PROPERTIES_KEY = "haseko-properties-v2";
@@ -57,17 +58,6 @@ function saveQuote(roomId, lines) {
   } catch {
     /* ignore */
   }
-}
-
-function calcLineQty(line, sectionType) {
-  if (!line || line.type === "comment" || line.active === false) return 0;
-  const lineType = line.lineType || sectionType || "other";
-  if (lineType === "harikae") {
-    const t1 = Number(line.taisho1) || 0;
-    const t2 = Number(line.taisho2) || 0;
-    return Math.round((t1 + t2) * 100) / 100;
-  }
-  return Number(line.suryo) || 0;
 }
 
 function LoginScreen({ onLogin }) {
@@ -202,10 +192,7 @@ export default function App() {
       saveQuote(activeRoom.roomId, sections);
       setQuoteLines(sections);
       const allLines = Array.isArray(sections) ? sections.flatMap((s) => s.lines || []) : [];
-      const total = (Array.isArray(sections) ? sections : []).reduce((sum, sec) => {
-        const lines = Array.isArray(sec?.lines) ? sec.lines : [];
-        return sum + lines.reduce((lineSum, line) => lineSum + calcLineQty(line, sec.kojiType) * (Number(line?.teika) || 0), 0);
-      }, 0);
+      const { grand } = computeQuoteTotals(sections);
       const detailCount = allLines.filter((l) => l?.type !== "comment").length;
       setProperties((prev) =>
         prev.map((p) =>
@@ -219,7 +206,7 @@ export default function App() {
                     : {
                         ...r,
                         status: detailCount > 0 ? "draft" : "pending",
-                        total,
+                        total: grand,
                         updatedAt: new Date().toISOString()
                       }
                 )

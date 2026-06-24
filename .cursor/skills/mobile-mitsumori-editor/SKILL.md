@@ -13,7 +13,7 @@ description: Optimize the Haseko mobile quote editor in excel-grid (見積編集
 - 小数滚轮：`excel-grid/src/dx/mobile/DecimalWheelPicker.jsx`
 - 单列滚轮：`excel-grid/src/dx/mobile/WheelColumn.jsx`
 - 预设数据：`excel-grid/src/dx/mobile/fieldPresets.js`
-- 样式：`excel-grid/src/index.css`（`@media (max-width: 768px)` 区块）
+- 样式：`excel-grid/src/index.css`（`@media (max-width: 1023px)` 区块）
 
 ## 字段与选择器模式
 

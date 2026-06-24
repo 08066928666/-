@@ -76,6 +76,7 @@ export function PropertyDetailPage({
                     <div className="mobile-room-name">{room.roomNo}</div>
                     <span className={`mobile-status-pill ${st.color}`}>{st.label}</span>
                     <div className="mobile-room-amount num-font">{fmtYen(room.total)}</div>
+                    <div className="mobile-room-amount-hint">税込</div>
                     <div className="mobile-room-date">更新: {fmtDate(room.updatedAt)}</div>
                   </div>
                   <div className="mobile-room-cta">

@@ -2,11 +2,15 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import * as XLSX from "xlsx";
 import { PresetInput, PresetFieldLabel } from "./mobile/PresetInput.jsx";
 import { getPresetsForField, getPickerMode, hasFieldPicker } from "./mobile/fieldPresets.js";
+import { calcLineAmount, calcLineSuryo, computeQuoteTotals } from "./quoteTotals.js";
+import { fmtDate } from "./propertyShared.js";
 
 function newId(prefix = "id") { return prefix + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7); }
 function fmtYen(n) { const v = Math.round(Number(n) || 0); return v > 0 ? `¥${v.toLocaleString("ja-JP")}` : "—"; }
 
-function useIsMobile(breakpoint = 768) {
+const MOBILE_BREAKPOINT = 1024;
+
+function useIsMobile(breakpoint = MOBILE_BREAKPOINT) {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia(`(max-width: ${breakpoint - 1}px)`).matches : false
   );
@@ -104,15 +108,6 @@ function isDetailLine(line) { return line.type !== "comment"; }
 
 function getLineType(line, sectionKojiType) {
   return line.lineType || sectionKojiType || "other";
-}
-
-function calcLineSuryo(line, sectionKojiType) {
-  const kt = getKojiType(getLineType(line, sectionKojiType));
-  return kt.autoSuryo ? kt.autoSuryo(line) : (Number(line.suryo) || 0);
-}
-
-function calcLineAmount(line, sectionKojiType) {
-  return calcLineSuryo(line, sectionKojiType) * (Number(line.teika) || 0);
 }
 
 function formatSummaryLabel(sectionName, defaultLabel) {
@@ -347,8 +342,8 @@ function MobileTypedLine({
         {kt.fields.map((f) => {
           const presets = getPresetsForField(f.key);
           const isNumeric = f.type === "number";
-          const pickerMode = getPickerMode(f.key) || "preset";
-          const showPicker = hasFieldPicker(f.key);
+          const pickerMode = getPickerMode(f.key, lineTypeId) || "preset";
+          const showPicker = hasFieldPicker(f.key, lineTypeId);
           return (
             <label key={f.key} className="mobile-field">
               <PresetFieldLabel label={f.label} hasPresets={showPicker} numeric={isNumeric} />
@@ -409,6 +404,7 @@ function MobileTypedLine({
             disabled={dim}
             placeholder="0"
             presets={getPresetsForField("teika")}
+            wheelMode="preset"
             pickerTitle="単価"
             onChange={(v) => onPatch({ teika: v })}
           />
@@ -613,12 +609,7 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
   }, [isMobile]);
 
   const allDetailLines = useMemo(() => sections.flatMap((s) => s.lines.filter(isDetailLine)), [sections]);
-  const total = useMemo(() =>
-    sections.reduce((sum, sec) =>
-      sum + sec.lines.filter((l) => isDetailLine(l) && l.active !== false).reduce((s, l) =>
-        s + calcLineAmount(l, sec.kojiType), 0), 0), [sections]);
-  const tax = Math.floor(total * 0.1);
-  const grand = total + tax;
+  const { subtotal: total, tax, grand } = useMemo(() => computeQuoteTotals(sections), [sections]);
 
   const secTotal = useCallback((sec) =>
     sec.lines.filter((l) => isDetailLine(l) && l.active !== false).reduce((s, l) =>
@@ -806,6 +797,11 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
     setTimeout(() => setSaved(false), 2500);
   }, [sections, onSave]);
 
+  const handleBack = useCallback(() => {
+    if (dirty && !window.confirm("変更が保存されていません。保存せずに戻りますか？")) return;
+    onBack();
+  }, [dirty, onBack]);
+
   const handleUndoDelete = useCallback(() => {
     if (!undoState) return;
     if (undoState.type === "line") {
@@ -880,7 +876,7 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
       {/* Header */}
       <header className="mobile-header editor-mobile-header bg-white border-b border-slate-200 px-3 py-2 flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <button type="button" className="editor-icon-btn" onClick={onBack}>
+          <button type="button" className="editor-icon-btn" onClick={handleBack}>
             <i className="fa-solid fa-chevron-left" />
           </button>
           <div className="min-w-0">
@@ -889,7 +885,10 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
               <span className="text-sm font-bold text-blue-600 shrink-0">{roomNo}</span>
               {dirty && <span className="editor-dirty-dot shrink-0" title="未保存" />}
             </div>
-            <span className="text-[10px] text-slate-400">{allDetailLines.length}件 · {fmtYen(grand)}</span>
+            <span className="text-[10px] text-slate-400">
+              {allDetailLines.length}件 · 税込 {fmtYen(grand)}
+              {lastSavedAt && !dirty ? ` · 保存 ${fmtDate(lastSavedAt.toISOString())}` : ""}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -910,7 +909,7 @@ export function SimpleQuoteEditor({ propertyName, roomNo, lines: initialLines, o
             onClick={handleSave}
           >
             <i className={`fa-solid ${saved ? "fa-check" : "fa-save"}`} />
-            {!isMobile && <span>{saved ? "済" : "保存"}</span>}
+            <span>{saved ? "保存済" : "保存"}</span>
           </button>
         </div>
       </header>

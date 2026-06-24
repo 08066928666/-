@@ -53,16 +53,26 @@ export function GenbashoImportModal({ open, onClose, onApply }) {
 
   return (
     <div className="genbasho-modal-overlay" onClick={handleClose}>
-      <div className="genbasho-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="genbasho-modal ios-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="genbasho-modal-header">
-          <div>
-            <h2 className="genbasho-modal-title">原紙見積取込</h2>
-            <p className="genbasho-modal-sub">クロス貼替 → DB 突合 → 明細反映</p>
-          </div>
-          <button type="button" className="genbasho-modal-close" onClick={handleClose} aria-label="閉じる">
-            <i className="fa-solid fa-xmark" />
+          <button type="button" className="ios-sheet-cancel" onClick={handleClose}>
+            キャンセル
           </button>
+          <h2 className="genbasho-modal-title">原紙見積取込</h2>
+          {step === "preview" ? (
+            <button
+              type="button"
+              className="ios-sheet-done"
+              disabled={!preview?.sections?.length}
+              onClick={handleApply}
+            >
+              反映
+            </button>
+          ) : (
+            <span className="ios-sheet-done placeholder" />
+          )}
         </div>
+        <p className="genbasho-modal-sub">クロス貼替 → DB 突合 → 明細反映</p>
 
         {step === "paste" ? (
           <>
@@ -74,18 +84,15 @@ export function GenbashoImportModal({ open, onClose, onApply }) {
               rows={8}
             />
             <div className="genbasho-modal-actions">
-              <button type="button" className="genbasho-btn secondary" onClick={handleClose}>
-                キャンセル
-              </button>
               <button type="button" className="genbasho-btn primary" disabled={!text.trim()} onClick={handleParse}>
-                <i className="fa-solid fa-magnifying-glass" /> 解析プレビュー
+                解析プレビュー
               </button>
             </div>
           </>
         ) : (
           <>
             {stats && (
-              <div className="genbasho-stats">
+              <div className="genbasho-stats ios-segment-info">
                 <span>{stats.sections} 工事</span>
                 <span>{stats.meisai_rows} 明細</span>
                 <span className="text-emerald-600">{stats.matched_rows} DB一致</span>
@@ -101,18 +108,20 @@ export function GenbashoImportModal({ open, onClose, onApply }) {
               </div>
             )}
 
-            <div className="genbasho-preview-list">
+            <div className="genbasho-preview-list ios-inset-group">
               {previewRows.length === 0 ? (
                 <p className="text-sm text-slate-400 text-center py-6">解析結果がありません</p>
               ) : (
                 previewRows.map((r, i) => (
-                  <div key={i} className={`genbasho-preview-row ${r.matched ? "matched" : "review"}`}>
-                    <div className="font-bold text-sm truncate">{r.basho || "—"}</div>
-                    <div className="text-xs text-slate-500">
-                      {r.bui} · {r.suryo}㎡ · ¥{Number(r.tanka || 0).toLocaleString("ja-JP")}
+                  <div key={i} className={`genbasho-preview-row ios-row ${r.matched ? "matched" : "review"}`}>
+                    <div className="ios-row-body">
+                      <div className="ios-row-title truncate">{r.basho || "—"}</div>
+                      <div className="ios-row-subtitle">
+                        {r.bui} · {r.suryo}㎡ · ¥{Number(r.tanka || 0).toLocaleString("ja-JP")}
+                      </div>
                     </div>
                     <span className={`genbasho-match-badge ${r.matched ? "ok" : "warn"}`}>
-                      {r.matched ? `DB ${Math.round((r.score || 0) * 100)}%` : "要確認"}
+                      {r.matched ? `${Math.round((r.score || 0) * 100)}%` : "要確認"}
                     </span>
                   </div>
                 ))
@@ -121,15 +130,7 @@ export function GenbashoImportModal({ open, onClose, onApply }) {
 
             <div className="genbasho-modal-actions">
               <button type="button" className="genbasho-btn secondary" onClick={() => setStep("paste")}>
-                戻る
-              </button>
-              <button
-                type="button"
-                className="genbasho-btn primary"
-                disabled={!preview?.sections?.length}
-                onClick={handleApply}
-              >
-                <i className="fa-solid fa-file-import" /> 明細に反映
+                戻って編集
               </button>
             </div>
           </>

@@ -101,37 +101,41 @@ function LoginScreen({ onLogin }) {
 
   return (
     <div className="login-screen">
-      <div className="login-card">
-        <div className="flex justify-center mb-6">
+      <div className="login-card w-full max-w-lg">
+        <div className="flex justify-start mb-8">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 shadow-lg shadow-blue-200">
             <i className="fa-solid fa-building text-white text-2xl" />
           </div>
         </div>
-        <h1 className="text-center text-2xl font-black text-slate-900 mb-1">長谷工 DX</h1>
-        <p className="text-center text-sm text-slate-400 mb-8">退去立会 · 見積ワークフロー</p>
-        <form onSubmit={submit} className="space-y-5">
-          <label className="block">
-            <span className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">ユーザー名</span>
-            <input
-              className="login-input"
-              value={user}
-              onChange={(e) => setUser(e.target.value)}
-              placeholder="demo"
-              autoComplete="username"
-            />
-          </label>
-          <label className="block">
-            <span className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">パスワード</span>
-            <input
-              type="password"
-              className="login-input"
-              value={pass}
-              onChange={(e) => setPass(e.target.value)}
-              placeholder="••••••"
-              autoComplete="current-password"
-            />
-          </label>
-          {err && <p className="text-center text-xs text-rose-600 font-medium">{err}</p>}
+        <h1 className="text-left text-2xl font-black text-slate-900 mb-1">長谷工 DX</h1>
+        <p className="text-left text-sm text-slate-400 mb-8">退去立会 · 見積ワークフロー</p>
+        <form onSubmit={submit} className="space-y-4">
+          <div className="ios-inset-group">
+            <label className="ios-row flex-col items-stretch !min-h-0 !py-0">
+              <span className="text-xs text-slate-500 px-4 pt-3 pb-1">ユーザー名</span>
+              <input
+                className="login-input !rounded-none !bg-transparent border-none"
+                style={{ boxShadow: "none" }}
+                value={user}
+                onChange={(e) => setUser(e.target.value)}
+                placeholder="demo"
+                autoComplete="username"
+              />
+            </label>
+            <label className="ios-row flex-col items-stretch !min-h-0 !py-0">
+              <span className="text-xs text-slate-500 px-4 pt-3 pb-1">パスワード</span>
+              <input
+                type="password"
+                className="login-input !rounded-none !bg-transparent border-none"
+                style={{ boxShadow: "none" }}
+                value={pass}
+                onChange={(e) => setPass(e.target.value)}
+                placeholder="••••••"
+                autoComplete="current-password"
+              />
+            </label>
+          </div>
+          {err && <p className="text-center text-xs text-rose-600 font-medium px-4">{err}</p>}
           <button type="submit" className="login-btn">
             ログイン
           </button>

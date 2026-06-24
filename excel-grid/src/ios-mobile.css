@@ -1,0 +1,817 @@
+/* ──────────────────────────────────────────
+   iOS Mobile Design System
+   ────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  :root {
+    --ios-bg: #f2f2f7;
+    --ios-bg-secondary: #ffffff;
+    --ios-label: #000000;
+    --ios-label-secondary: #3c3c43;
+    --ios-label-tertiary: #3c3c4399;
+    --ios-separator: #3c3c432e;
+    --ios-blue: #007aff;
+    --ios-blue-pressed: #0051d5;
+    --ios-green: #34c759;
+    --ios-orange: #ff9500;
+    --ios-red: #ff3b30;
+    --ios-fill: #78788033;
+    --ios-fill-secondary: #78788029;
+    --ios-group-radius: 0.625rem;
+    --ios-nav-blur: saturate(180%) blur(20px);
+    --ios-sheet-radius: 0.875rem;
+    --ios-touch-min: 2.75rem;
+  }
+
+  .haseko-app {
+    font-family:
+      -apple-system,
+      BlinkMacSystemFont,
+      "SF Pro Text",
+      "SF Pro Display",
+      "Helvetica Neue",
+      "Yu Gothic UI",
+      YuGothic,
+      "Hiragino Sans",
+      sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  /* ── Page shell ── */
+  .mobile-page,
+  .editor-root {
+    background: var(--ios-bg);
+    color: var(--ios-label);
+  }
+
+  .ios-nav-bar {
+    background: rgb(242 242 247 / 0.72);
+    backdrop-filter: var(--ios-nav-blur);
+    -webkit-backdrop-filter: var(--ios-nav-blur);
+    border-bottom: 0.5px solid var(--ios-separator);
+    padding-top: calc(0.375rem + env(safe-area-inset-top, 0px));
+    padding-bottom: 0.5rem;
+  }
+
+  .ios-page-large-title .ios-nav-bar .mobile-title,
+  .ios-page-large-title .ios-nav-bar .mobile-subtitle {
+    display: none;
+  }
+
+  .ios-large-title-block {
+    padding: 0.25rem 1rem 0.625rem;
+    background: var(--ios-bg);
+  }
+
+  .ios-large-title {
+    font-size: 2.125rem;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--ios-label);
+  }
+
+  .ios-large-subtitle {
+    margin-top: 0.25rem;
+    font-size: 0.9375rem;
+    color: var(--ios-label-tertiary);
+    font-weight: 400;
+  }
+
+  .mobile-back-btn {
+    min-height: var(--ios-touch-min);
+    padding: 0 0.25rem;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--ios-blue);
+    font-size: 1.0625rem;
+    font-weight: 400;
+    gap: 0.125rem;
+  }
+
+  .mobile-back-btn i {
+    font-size: 1.125rem;
+    margin-right: -0.125rem;
+  }
+
+  .mobile-icon-btn {
+    width: var(--ios-touch-min);
+    height: var(--ios-touch-min);
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: var(--ios-blue);
+    font-size: 1.125rem;
+  }
+
+  .ios-content {
+    padding: 0 1rem 1rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ── Grouped lists (UITableView inset style) ── */
+  .ios-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .ios-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    color: var(--ios-label-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .ios-text-btn {
+    border: none;
+    background: transparent;
+    color: var(--ios-blue);
+    font-size: 1.0625rem;
+    font-weight: 400;
+    padding: 0;
+    min-height: auto;
+  }
+
+  .ios-text-btn:active {
+    opacity: 0.45;
+  }
+
+  .ios-inset-group {
+    background: var(--ios-bg-secondary);
+    border-radius: var(--ios-group-radius);
+    overflow: hidden;
+    box-shadow: none;
+  }
+
+  .ios-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.6875rem 1rem;
+    border: none;
+    background: var(--ios-bg-secondary);
+    text-align: left;
+    color: inherit;
+    position: relative;
+    transition: background 0.12s ease;
+  }
+
+  .ios-row:active {
+    background: var(--ios-fill);
+  }
+
+  .ios-inset-group > div + div {
+    border-top: 0.5px solid var(--ios-separator);
+  }
+
+  .ios-row + .ios-row::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 3.25rem;
+    right: 0;
+    height: 0.5px;
+    background: var(--ios-separator);
+  }
+
+  .ios-row-icon {
+    width: 1.875rem;
+    height: 1.875rem;
+    border-radius: 0.4375rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.875rem;
+    color: #fff;
+  }
+
+  .ios-row-icon.blue { background: var(--ios-blue); }
+  .ios-row-icon.gray { background: #8e8e93; }
+  .ios-row-icon.green { background: var(--ios-green); }
+  .ios-row-icon.orange { background: var(--ios-orange); }
+
+  .ios-row-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ios-row-title {
+    font-size: 1.0625rem;
+    font-weight: 400;
+    color: var(--ios-label);
+    line-height: 1.25;
+  }
+
+  .ios-row-subtitle {
+    font-size: 0.9375rem;
+    color: var(--ios-label-tertiary);
+    margin-top: 0.125rem;
+  }
+
+  .ios-row-value {
+    font-size: 1.0625rem;
+    font-weight: 400;
+    color: var(--ios-label-secondary);
+    flex-shrink: 0;
+  }
+
+  .ios-row-chevron {
+    color: var(--ios-label-tertiary);
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    opacity: 0.45;
+  }
+
+  .ios-row-actions {
+    display: flex;
+    gap: 0;
+    margin-top: 0;
+    padding: 0;
+    border-top: 0.5px solid var(--ios-separator);
+  }
+
+  .ios-row-actions .ios-action-btn {
+    flex: 1;
+    min-height: 2.75rem;
+    border: none;
+    background: var(--ios-bg-secondary);
+    color: var(--ios-blue);
+    font-size: 1.0625rem;
+    font-weight: 400;
+  }
+
+  .ios-row-actions .ios-action-btn + .ios-action-btn {
+    border-left: 0.5px solid var(--ios-separator);
+  }
+
+  .ios-row-actions .ios-action-btn.danger {
+    color: var(--ios-red);
+  }
+
+  .ios-row-actions .ios-action-btn:active {
+    background: var(--ios-fill);
+  }
+
+  /* ── Search ── */
+  .mobile-search-wrap {
+    margin-bottom: 0.75rem;
+  }
+
+  .mobile-search {
+    border: none;
+    border-radius: 0.625rem;
+    background: var(--ios-fill-secondary);
+    padding: 0.5625rem 0.875rem 0.5625rem 2.125rem;
+    font-size: 1.0625rem;
+    color: var(--ios-label);
+  }
+
+  .mobile-search::placeholder {
+    color: var(--ios-label-tertiary);
+  }
+
+  .mobile-search:focus {
+    border: none;
+    box-shadow: none;
+    background: var(--ios-fill);
+  }
+
+  .mobile-search-icon {
+    left: 0.75rem;
+    color: var(--ios-label-tertiary);
+  }
+
+  /* ── Primary button (iOS filled) ── */
+  .mobile-primary-btn,
+  .ios-primary-btn {
+    width: 100%;
+    min-height: 3.125rem;
+    border: none;
+    border-radius: 0.75rem;
+    background: var(--ios-blue);
+    color: #fff;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .mobile-primary-btn:active,
+  .ios-primary-btn:active {
+    background: var(--ios-blue-pressed);
+    transform: scale(0.985);
+  }
+
+  /* ── Status pills → iOS tags ── */
+  .mobile-status-pill {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.25rem;
+    padding: 0.1875rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .mobile-status-pill.bg-slate-100 { background: var(--ios-fill); color: var(--ios-label-secondary); }
+  .mobile-status-pill.bg-amber-100 { background: rgb(255 149 0 / 0.15); color: #c93400; }
+  .mobile-status-pill.bg-emerald-100 { background: rgb(52 199 89 / 0.15); color: #248a3d; }
+
+  /* ── Login (iOS style) ── */
+  .login-screen {
+    background: var(--ios-bg);
+    align-items: flex-start;
+    padding-top: calc(3rem + env(safe-area-inset-top, 0px));
+  }
+
+  .login-card {
+    max-width: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0 1rem 2rem;
+  }
+
+  .login-card h1 {
+    font-size: 2.125rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-align: left !important;
+  }
+
+  .login-card > p.text-center.text-sm {
+    text-align: left !important;
+    color: var(--ios-label-tertiary) !important;
+    font-size: 1.0625rem !important;
+    margin-bottom: 2rem !important;
+  }
+
+  .login-card form label span {
+    font-size: 0.8125rem !important;
+    font-weight: 400 !important;
+    color: var(--ios-label-secondary) !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    padding-left: 1rem;
+  }
+
+  .login-card .login-input {
+    background: var(--ios-bg-secondary);
+    border-radius: var(--ios-group-radius);
+    padding: 0.875rem 1rem;
+    font-size: 1.0625rem;
+    border: none;
+  }
+
+  .login-card .login-input:focus {
+    box-shadow: none;
+    outline: 2px solid var(--ios-blue);
+    outline-offset: -2px;
+  }
+
+  .login-card .login-btn {
+    margin-top: 0.5rem;
+    min-height: 3.125rem;
+    border-radius: 0.75rem;
+    background: var(--ios-blue);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    box-shadow: none;
+  }
+
+  .login-card .login-btn:hover {
+    background: var(--ios-blue);
+  }
+
+  .login-card .login-btn:active {
+    background: var(--ios-blue-pressed);
+  }
+
+  .login-card .flex.h-16.w-16 {
+    width: 4.5rem !important;
+    height: 4.5rem !important;
+    border-radius: 1.125rem !important;
+    background: var(--ios-blue) !important;
+    box-shadow: none !important;
+  }
+
+  /* ── Editor iOS chrome ── */
+  .editor-root {
+    background: var(--ios-bg);
+  }
+
+  .editor-mobile-header,
+  .mobile-koji-toggle,
+  .mobile-editor-toolbar,
+  .editor-bottom-bar {
+    background: rgb(242 242 247 / 0.82);
+    backdrop-filter: var(--ios-nav-blur);
+    -webkit-backdrop-filter: var(--ios-nav-blur);
+    border-color: var(--ios-separator);
+  }
+
+  .editor-icon-btn {
+    background: transparent;
+    color: var(--ios-blue);
+    min-width: var(--ios-touch-min);
+    border-radius: 0;
+  }
+
+  .editor-save-btn {
+    background: transparent;
+    color: var(--ios-blue);
+    font-weight: 600;
+    padding: 0 0.5rem;
+    min-height: var(--ios-touch-min);
+  }
+
+  .editor-save-btn.is-saved {
+    background: transparent;
+    color: var(--ios-green);
+  }
+
+  .editor-done-btn {
+    background: transparent;
+    border: none;
+    color: var(--ios-green);
+    font-weight: 600;
+    padding: 0 0.375rem;
+  }
+
+  .editor-done-badge {
+    background: rgb(52 199 89 / 0.15);
+    color: #248a3d;
+    font-weight: 500;
+  }
+
+  .mobile-koji-toggle {
+    font-size: 1.0625rem;
+    font-weight: 400;
+  }
+
+  .mobile-koji-badge {
+    background: var(--ios-fill);
+    color: var(--ios-label-secondary);
+    font-weight: 500;
+  }
+
+  .mobile-editor-toolbar {
+    gap: 0.25rem;
+    padding: 0.375rem 0.75rem;
+  }
+
+  .mobile-toolbar-btn {
+    border: none;
+    background: transparent;
+    color: var(--ios-blue);
+    min-height: 2.625rem;
+    padding: 0.25rem 0.375rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+  }
+
+  .mobile-toolbar-btn:active {
+    background: var(--ios-fill);
+  }
+
+  .mobile-toolbar-label {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--ios-label-secondary);
+  }
+
+  .mobile-editor-toolbar .add-line-btn {
+    background: var(--ios-blue);
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    color: #fff;
+  }
+
+  .mobile-editor-toolbar .add-line-more {
+    background: var(--ios-fill);
+    border-radius: 0.5rem;
+    color: var(--ios-blue);
+  }
+
+  .mobile-lines-scroll {
+    background: var(--ios-bg);
+    padding: 0.5rem 0.75rem;
+  }
+
+  .mobile-line-card {
+    border: none;
+    border-radius: var(--ios-group-radius);
+    box-shadow: none;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .mobile-line-invalid {
+    box-shadow: inset 0 0 0 1px rgb(255 149 0 / 0.35);
+  }
+
+  .mobile-line-no {
+    background: var(--ios-fill);
+    color: var(--ios-label-secondary);
+    border-radius: 0.375rem;
+    font-weight: 600;
+  }
+
+  .estimate-summary-bar {
+    background: var(--ios-bg-secondary);
+    border-radius: var(--ios-group-radius);
+    margin: 0.5rem 0.75rem;
+    border: none;
+  }
+
+  .editor-bottom-bar {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ── Koji drawer → iOS sheet ── */
+  .koji-drawer-overlay {
+    background: rgb(0 0 0 / 0.35);
+  }
+
+  .koji-sidebar-drawer {
+    border-radius: var(--ios-sheet-radius) var(--ios-sheet-radius) 0 0;
+    box-shadow: 0 -8px 32px rgb(0 0 0 / 0.12);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .koji-sidebar-drawer::before {
+    content: "";
+    display: block;
+    width: 2.25rem;
+    height: 0.3125rem;
+    border-radius: 999px;
+    background: #d1d1d6;
+    margin: 0.5rem auto 0.375rem;
+  }
+
+  .koji-sidebar-item {
+    border-radius: 0;
+    margin: 0;
+  }
+
+  .koji-sidebar-item-active {
+    background: var(--ios-fill);
+  }
+
+  .koji-sidebar-add {
+    color: var(--ios-blue);
+    font-weight: 400;
+    font-size: 1.0625rem;
+  }
+
+  /* ── Genbasho sheet ── */
+  .genbasho-modal-overlay {
+    background: rgb(0 0 0 / 0.35);
+    align-items: flex-end;
+  }
+
+  .genbasho-modal {
+    border-radius: var(--ios-sheet-radius) var(--ios-sheet-radius) 0 0;
+    padding: 0 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    max-height: 92vh;
+  }
+
+  .genbasho-modal::before {
+    content: "";
+    display: block;
+    width: 2.25rem;
+    height: 0.3125rem;
+    border-radius: 999px;
+    background: #d1d1d6;
+    margin: 0.5rem auto 0.75rem;
+  }
+
+  .genbasho-modal-header {
+    justify-content: center;
+    position: relative;
+    margin-bottom: 0.25rem;
+    min-height: 2.75rem;
+    align-items: center;
+  }
+
+  .ios-sheet-cancel,
+  .ios-sheet-done {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    color: var(--ios-blue);
+    font-size: 1.0625rem;
+    font-weight: 400;
+    padding: 0 0.25rem;
+    min-height: var(--ios-touch-min);
+  }
+
+  .ios-sheet-cancel {
+    left: 0;
+  }
+
+  .ios-sheet-done {
+    right: 0;
+    font-weight: 600;
+  }
+
+  .ios-sheet-done:disabled {
+    opacity: 0.35;
+  }
+
+  .ios-sheet-done.placeholder {
+    visibility: hidden;
+  }
+
+  .genbasho-modal-sub {
+    text-align: center;
+    font-size: 0.8125rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .genbasho-modal-close {
+    display: none;
+  }
+
+  .genbasho-textarea {
+    border: none;
+    background: var(--ios-fill-secondary);
+    border-radius: var(--ios-group-radius);
+    font-size: 0.9375rem;
+  }
+
+  .genbasho-btn.primary {
+    background: var(--ios-blue);
+    font-weight: 600;
+  }
+
+  .genbasho-btn.secondary {
+    border: none;
+    background: var(--ios-fill-secondary);
+    color: var(--ios-label);
+    font-weight: 400;
+  }
+
+  .genbasho-preview-list {
+    border: none;
+    background: var(--ios-bg-secondary);
+    border-radius: var(--ios-group-radius);
+  }
+
+  .genbasho-modal-title {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    text-align: center;
+    margin: 0;
+  }
+
+  .genbasho-modal-actions {
+    flex-direction: column;
+  }
+
+  .genbasho-modal-actions .genbasho-btn {
+    flex: none;
+    width: 100%;
+  }
+
+  .ios-segment-info {
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: var(--ios-fill-secondary);
+    border-radius: var(--ios-group-radius);
+    margin-bottom: 0.625rem;
+  }
+
+  /* iOS tap feedback */
+  button,
+  .ios-row,
+  .mobile-prop-card {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .login-screen .ios-inset-group .ios-row + .ios-row::before {
+    left: 1rem;
+  }
+
+  .login-screen .ios-inset-group .login-input {
+    width: 100%;
+    padding: 0 1rem 0.875rem;
+  }
+
+  .genbasho-preview-list.ios-inset-group .genbasho-preview-row {
+    border-bottom: none;
+  }
+
+  .genbasho-preview-list.ios-inset-group .genbasho-preview-row + .genbasho-preview-row::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 1rem;
+    right: 0;
+    height: 0.5px;
+    background: var(--ios-separator);
+  }
+
+  .genbasho-match-badge.ok {
+    background: rgb(52 199 89 / 0.15);
+    color: #248a3d;
+  }
+
+  .genbasho-match-badge.warn {
+    background: rgb(255 149 0 / 0.15);
+    color: #c93400;
+  }
+
+  /* ── Toasts ── */
+  .save-toast,
+  .undo-toast {
+    background: rgb(28 28 30 / 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 0.875rem;
+    font-weight: 500;
+    font-size: 0.9375rem;
+  }
+
+  .undo-toast-btn {
+    background: var(--ios-blue);
+    font-weight: 600;
+  }
+
+  /* ── Inline editors ── */
+  .mobile-inline-input {
+    border: none;
+    background: var(--ios-bg-secondary);
+    border-radius: var(--ios-group-radius);
+    font-size: 1.0625rem;
+  }
+
+  .mobile-inline-ok {
+    background: var(--ios-blue);
+    border-radius: 50%;
+  }
+
+  .mobile-inline-cancel {
+    background: var(--ios-fill);
+    border-radius: 50%;
+    color: var(--ios-label-secondary);
+  }
+
+  .mobile-empty {
+    color: var(--ios-label-tertiary);
+    font-size: 1.0625rem;
+  }
+
+  .mobile-footer-hint {
+    color: var(--ios-label-tertiary);
+    font-size: 0.8125rem;
+  }
+
+  /* ── Type picker / add line dropdown ── */
+  .type-picker-overlay,
+  .add-line-dropdown-overlay {
+    background: rgb(0 0 0 / 0.35);
+  }
+
+  .type-picker,
+  .add-line-dropdown {
+    border-radius: var(--ios-sheet-radius);
+    border: none;
+    box-shadow: 0 8px 32px rgb(0 0 0 / 0.15);
+  }
+
+  .add-line-dropdown-item:active {
+    background: var(--ios-fill);
+  }
+
+  /* ── Preset popover ── */
+  .preset-popover {
+    border-radius: var(--ios-group-radius);
+    border: none;
+    box-shadow: 0 4px 24px rgb(0 0 0 / 0.12);
+  }
+
+  .preset-popover-item:active {
+    background: var(--ios-fill);
+  }
+
+  /* ── Decimal wheel picker ── */
+  .decimal-wheel-popover,
+  .number-wheel-popover {
+    border-radius: var(--ios-sheet-radius) var(--ios-sheet-radius) 0 0;
+  }
+
+  .wheel-column-item.selected {
+    color: var(--ios-label);
+    font-weight: 600;
+  }
+}

@@ -35,93 +35,97 @@ export function PropertyListPage({ properties, onPropertiesChange, onSelectPrope
 
   return (
     <MobileShell
+      largeTitle
       title="物件一覧"
       subtitle="HASEKO DX · 退去立会見積"
       right={
-        <button type="button" className="mobile-icon-btn text-slate-500" onClick={onLogout} title="ログアウト">
+        <button type="button" className="mobile-icon-btn" onClick={onLogout} title="ログアウト">
           <i className="fa-solid fa-right-from-bracket" />
         </button>
       }
     >
-      <div className="mobile-toolbar">
-        <div className="mobile-search-wrap">
-          <i className="fa-solid fa-magnifying-glass mobile-search-icon" />
-          <input
-            type="search"
-            className="mobile-search"
-            placeholder="物件名・部屋番号で検索"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        {!addingProp ? (
-          <button type="button" className="mobile-primary-btn" onClick={() => setAddingProp(true)}>
-            <i className="fa-solid fa-plus" /> 物件追加
-          </button>
-        ) : (
-          <InlineAdd placeholder="物件名を入力" onConfirm={addProperty} onCancel={() => setAddingProp(false)} autoFocus />
-        )}
+      <div className="mobile-search-wrap">
+        <i className="fa-solid fa-magnifying-glass mobile-search-icon" />
+        <input
+          type="search"
+          className="mobile-search"
+          placeholder="検索"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
-      <div className="mobile-card-list">
+      <div className="ios-group">
+        <div className="ios-group-header">
+          <span>物件</span>
+          {!addingProp && (
+            <button type="button" className="ios-text-btn" onClick={() => setAddingProp(true)}>
+              追加
+            </button>
+          )}
+        </div>
+
+        {addingProp && (
+          <div className="ios-inset-group" style={{ marginBottom: "0.625rem" }}>
+            <div className="ios-row">
+              <InlineAdd placeholder="物件名を入力" onConfirm={addProperty} onCancel={() => setAddingProp(false)} autoFocus />
+            </div>
+          </div>
+        )}
+
         {filtered.length === 0 ? (
           <p className="mobile-empty">物件がありません</p>
         ) : (
-          filtered.map((prop) => {
-            const doneCount = prop.rooms.filter((r) => r.status === "done").length;
-            const total = prop.rooms.reduce((s, r) => s + (Number(r.total) || 0), 0);
-            const isRenaming = renamingPropId === prop.id;
-            return (
-              <button
-                key={prop.id}
-                type="button"
-                className="mobile-prop-card"
-                onClick={() => !isRenaming && onSelectProperty(prop.id)}
-              >
-                <div className="mobile-prop-card-main">
-                  <div className="mobile-prop-icon">
-                    <i className="fa-solid fa-building" />
-                  </div>
-                  <div className="min-w-0 flex-1 text-left">
-                    {isRenaming ? (
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <InlineRename
-                          initial={prop.name}
-                          onConfirm={(n) => renameProperty(prop.id, n)}
-                          onCancel={() => setRenamingPropId(null)}
-                        />
+          <div className="ios-inset-group">
+            {filtered.map((prop) => {
+              const doneCount = prop.rooms.filter((r) => r.status === "done").length;
+              const total = prop.rooms.reduce((s, r) => s + (Number(r.total) || 0), 0);
+              const isRenaming = renamingPropId === prop.id;
+              return (
+                <div key={prop.id}>
+                  {isRenaming ? (
+                    <div className="ios-row">
+                      <InlineRename
+                        initial={prop.name}
+                        onConfirm={(n) => renameProperty(prop.id, n)}
+                        onCancel={() => setRenamingPropId(null)}
+                      />
+                    </div>
+                  ) : (
+                    <button type="button" className="ios-row" onClick={() => onSelectProperty(prop.id)}>
+                      <div className="ios-row-icon blue">
+                        <i className="fa-solid fa-building" />
                       </div>
-                    ) : (
-                      <>
-                        <div className="mobile-prop-name">{prop.name}</div>
-                        <div className="mobile-prop-meta">
+                      <div className="ios-row-body">
+                        <div className="ios-row-title">{prop.name}</div>
+                        <div className="ios-row-subtitle">
                           {prop.rooms.length} 部屋
                           {doneCount > 0 ? ` · ${doneCount} 完了` : ""}
                         </div>
-                        <div className="mobile-prop-amount num-font">{fmtYen(total)}</div>
-                        <div className="mobile-prop-amount-hint">税込</div>
-                      </>
-                    )}
-                  </div>
-                  <i className="fa-solid fa-chevron-right text-slate-300 shrink-0" />
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="ios-row-value num-font">{fmtYen(total)}</div>
+                        <div className="ios-row-subtitle" style={{ fontSize: "0.6875rem", marginTop: 0 }}>
+                          税込
+                        </div>
+                      </div>
+                      <i className="fa-solid fa-chevron-right ios-row-chevron" />
+                    </button>
+                  )}
+                  {!isRenaming && (
+                    <div className="ios-row-actions">
+                      <button type="button" className="ios-action-btn" onClick={() => setRenamingPropId(prop.id)}>
+                        名称変更
+                      </button>
+                      <button type="button" className="ios-action-btn danger" onClick={(e) => deleteProperty(prop.id, e)}>
+                        削除
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {!isRenaming && (
-                  <div className="mobile-prop-actions" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      className="mobile-chip-btn"
-                      onClick={() => setRenamingPropId(prop.id)}
-                    >
-                      <i className="fa-solid fa-pen" /> 名称変更
-                    </button>
-                    <button type="button" className="mobile-chip-btn danger" onClick={(e) => deleteProperty(prop.id, e)}>
-                      <i className="fa-solid fa-trash" /> 削除
-                    </button>
-                  </div>
-                )}
-              </button>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
 

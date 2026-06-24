@@ -40,61 +40,82 @@ export function PropertyDetailPage({
     );
   };
 
-  return (
-    <MobileShell title={property.name} subtitle={`${property.rooms.length} 部屋`} onBack={onBack} backLabel="一覧">
-      <div className="mobile-toolbar">
-        {!addingRoom ? (
-          <button type="button" className="mobile-primary-btn" onClick={() => setAddingRoom(true)}>
-            <i className="fa-solid fa-plus" /> 部屋追加
-          </button>
-        ) : (
-          <InlineAdd
-            placeholder="部屋番号（例: 302号室）"
-            onConfirm={addRoom}
-            onCancel={() => setAddingRoom(false)}
-            autoFocus
-          />
-        )}
-      </div>
+  const doneCount = property.rooms.filter((r) => r.status === "done").length;
 
-      <div className="mobile-card-list">
+  return (
+    <MobileShell
+      largeTitle
+      title={property.name}
+      subtitle={`${property.rooms.length} 部屋${doneCount > 0 ? ` · ${doneCount} 完了` : ""}`}
+      onBack={onBack}
+      backLabel="一覧"
+    >
+      <div className="ios-group">
+        <div className="ios-group-header">
+          <span>部屋</span>
+          {!addingRoom && (
+            <button type="button" className="ios-text-btn" onClick={() => setAddingRoom(true)}>
+              追加
+            </button>
+          )}
+        </div>
+
+        {addingRoom && (
+          <div className="ios-inset-group" style={{ marginBottom: "0.625rem" }}>
+            <div className="ios-row">
+              <InlineAdd
+                placeholder="部屋番号（例: 302号室）"
+                onConfirm={addRoom}
+                onCancel={() => setAddingRoom(false)}
+                autoFocus
+              />
+            </div>
+          </div>
+        )}
+
         {property.rooms.length === 0 ? (
-          <p className="mobile-empty">部屋がありません。上のボタンから追加してください。</p>
+          <p className="mobile-empty">部屋がありません</p>
         ) : (
-          property.rooms.map((room) => {
-            const st = STATUS_MAP[room.status] || STATUS_MAP.pending;
-            const roomNum = room.roomNo.replace(/[^0-9]/g, "").slice(0, 4) || "—";
-            return (
-              <div key={room.id} className="mobile-room-card">
-                <button
-                  type="button"
-                  className="mobile-room-card-tap"
-                  onClick={() => onOpenRoom(property.id, room.id)}
-                >
-                  <div className="mobile-room-badge">{roomNum}</div>
-                  <div className="min-w-0 flex-1 text-left">
-                    <div className="mobile-room-name">{room.roomNo}</div>
-                    <span className={`mobile-status-pill ${st.color}`}>{st.label}</span>
-                    <div className="mobile-room-amount num-font">{fmtYen(room.total)}</div>
-                    <div className="mobile-room-amount-hint">税込</div>
-                    <div className="mobile-room-date">更新: {fmtDate(room.updatedAt)}</div>
+          <div className="ios-inset-group">
+            {property.rooms.map((room) => {
+              const st = STATUS_MAP[room.status] || STATUS_MAP.pending;
+              const roomNum = room.roomNo.replace(/[^0-9]/g, "").slice(0, 4) || "—";
+              return (
+                <div key={room.id}>
+                  <button
+                    type="button"
+                    className="ios-row"
+                    onClick={() => onOpenRoom(property.id, room.id)}
+                  >
+                    <div className={`ios-row-icon ${room.status === "done" ? "green" : room.status === "draft" ? "orange" : "gray"}`}>
+                      {roomNum}
+                    </div>
+                    <div className="ios-row-body">
+                      <div className="ios-row-title">{room.roomNo}</div>
+                      <span className={`mobile-status-pill ${st.color}`}>{st.label}</span>
+                      <div className="ios-row-subtitle">更新: {fmtDate(room.updatedAt)}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="ios-row-value num-font">{fmtYen(room.total)}</div>
+                      <div className="ios-row-subtitle" style={{ fontSize: "0.6875rem", marginTop: 0 }}>
+                        税込
+                      </div>
+                    </div>
+                    <i className="fa-solid fa-chevron-right ios-row-chevron" />
+                  </button>
+                  <div className="ios-row-actions">
+                    <button
+                      type="button"
+                      className="ios-action-btn danger"
+                      onClick={() => deleteRoom(room.id)}
+                    >
+                      削除
+                    </button>
                   </div>
-                  <div className="mobile-room-cta">
-                    <span>見積編集</span>
-                    <i className="fa-solid fa-chevron-right" />
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  className="mobile-room-delete"
-                  onClick={() => deleteRoom(room.id)}
-                  aria-label="部屋を削除"
-                >
-                  <i className="fa-solid fa-trash" />
-                </button>
-              </div>
-            );
-          })
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </MobileShell>

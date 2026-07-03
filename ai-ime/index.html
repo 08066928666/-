@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>AI 智能输入法 · 原型</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      :root {
+        --kb-bg: #d1d5db;
+        --key-bg: #ffffff;
+        --key-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+        --accent: #007aff;
+        --smart: #34c759;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        background: #0f1419;
+        color: #e7e9ea;
+        min-height: 100vh;
+        margin: 0;
+      }
+      .key {
+        background: var(--key-bg);
+        box-shadow: var(--key-shadow);
+        border-radius: 5px;
+        user-select: none;
+        touch-action: manipulation;
+      }
+      .key:active {
+        background: #c7c7cc;
+        transform: scale(0.97);
+      }
+      .key-special {
+        background: #acb3bb;
+      }
+      .key-send {
+        background: var(--accent);
+        color: #fff;
+      }
+      .key-send:active {
+        background: #0062cc;
+      }
+      .smart-glow {
+        box-shadow: 0 0 0 2px var(--smart), 0 0 24px rgba(52, 199, 89, 0.35);
+      }
+      .subtitle-line {
+        border-left: 3px solid var(--smart);
+        padding-left: 10px;
+        margin-top: 6px;
+        color: #8b98a5;
+        font-size: 13px;
+      }
+      .preview-bar {
+        background: linear-gradient(180deg, rgba(52, 199, 89, 0.12) 0%, rgba(15, 20, 25, 0.95) 100%);
+        border-top: 1px solid rgba(52, 199, 89, 0.3);
+      }
+      .steam-panel {
+        background: linear-gradient(180deg, #1b2838 0%, #171d25 100%);
+      }
+      @keyframes pulse-smart {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+      .smart-pulse {
+        animation: pulse-smart 2s ease-in-out infinite;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      const { useState, useMemo, useCallback } = React;
+
+      // 演示用翻译词典（正式版接 AI API）
+      const TRANSLATE = {
+        toZh: {
+          "Hey! Nice game earlier, want to team up again?": "嘿！刚才那局打得不错，要不要再来一局？",
+          "GG! You're really good at this.": "打得好！你真的很厉害。",
+          "Where are you from?": "你是哪里人？",
+          "Thanks for the help!": "谢谢你的帮助！",
+          "Let's go!": "冲啊！",
+          "すみません、一緒にプレイしませんか？": "不好意思，要不要一起玩？",
+          "上手ですね！また一緒にやりましょう。": "好厉害！下次再一起玩吧。",
+          "こんにちは！": "你好！",
+        },
+        fromZh: {
+          "你好！我也玩得很开心。": { en: "Hi! I had a great time too.", ja: "こんにちは！私も楽しかったです。" },
+          "好的，再来一局吧。": { en: "Sure, let's play another round.", ja: "はい、もう一局やりましょう。" },
+          "谢谢，你也很厉害。": { en: "Thanks, you're awesome too.", ja: "ありがとう、あなたもすごいです。" },
+          "我是中国人，英语不太好。": { en: "I'm from China, my English isn't great.", ja: "中国人です、日本語はあまり得意ではありません。" },
+          "没问题，一起加油！": { en: "No problem, let's do this!", ja: "大丈夫、一緒に頑張りましょう！" },
+          "可以，加我吧。": { en: "Sure, add me.", ja: "いいですよ、追加してください。" },
+        },
+      };
+
+      function translateToZh(text) {
+        if (TRANSLATE.toZh[text]) return TRANSLATE.toZh[text];
+        if (/[\u3040-\u30ff]/.test(text)) return "（日语）" + text;
+        if (/[a-zA-Z]/.test(text)) return "（英语）" + text;
+        return text;
+      }
+
+      function translateFromZh(text, lang) {
+        const entry = TRANSLATE.fromZh[text];
+        if (entry) return entry[lang] || entry.en;
+        if (lang === "ja") return "（自动翻译）" + text;
+        return "(Auto) " + text;
+      }
+
+      const PINYIN_KEYS = [
+        ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+        ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+        ["⇧", "z", "x", "c", "v", "b", "n", "m", "⌫"],
+      ];
+
+      const INITIAL_MESSAGES = {
+        en: [
+          { id: 1, from: "them", text: "Hey! Nice game earlier, want to team up again?", lang: "en" },
+          { id: 2, from: "them", text: "GG! You're really good at this.", lang: "en" },
+        ],
+        ja: [
+          { id: 1, from: "them", text: "こんにちは！", lang: "ja" },
+          { id: 2, from: "them", text: "上手ですね！また一緒にやりましょう。", lang: "ja" },
+        ],
+      };
+
+      const QUICK_PHRASES = [
+        "你好！我也玩得很开心。",
+        "好的，再来一局吧。",
+        "谢谢，你也很厉害。",
+        "我是中国人，英语不太好。",
+        "没问题，一起加油！",
+        "可以，加我吧。",
+      ];
+
+      function SmartBadge({ on }) {
+        return (
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+              on ? "bg-green-500/20 text-green-400 smart-pulse" : "bg-gray-600/30 text-gray-500"
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${on ? "bg-green-400" : "bg-gray-500"}`} />
+            AI 智能
+          </span>
+        );
+      }
+
+      function ChatBubble({ msg, smartMode }) {
+        const isMe = msg.from === "me";
+        const subtitle = smartMode && !isMe ? translateToZh(msg.text) : null;
+        const showBilingual = smartMode && isMe && msg.translation;
+
+        return (
+          <div className={`flex ${isMe ? "justify-end" : "justify-start"} mb-3`}>
+            <div
+              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${
+                isMe ? "bg-[#1a6dcc] text-white rounded-br-md" : "bg-[#2a475e] text-[#c7d5e0] rounded-bl-md"
+              }`}
+            >
+              {showBilingual ? (
+                <>
+                  <div className="text-[15px] leading-snug">{msg.translation}</div>
+                  <div className="subtitle-line text-white/70 border-white/30">{msg.text}</div>
+                </>
+              ) : (
+                <div className="text-[15px] leading-snug">{msg.text}</div>
+              )}
+              {subtitle && subtitle !== msg.text && (
+                <div className="subtitle-line">{subtitle}</div>
+              )}
+            </div>
+          </div>
+        );
+      }
+
+      function Keyboard({ onKey, onSend, smartMode, onToggleSmart, composing, onSpace, onBackspace }) {
+        const handleKey = (k) => {
+          if (k === "⌫") onBackspace();
+          else if (k === "⇧") return;
+          else onKey(k);
+        };
+
+        return (
+          <div className={`bg-[var(--kb-bg)] rounded-t-2xl pt-2 pb-6 px-1 ${smartMode ? "smart-glow" : ""}`}>
+            {/* 工具栏 */}
+            <div className="flex items-center justify-between px-3 pb-2">
+              <button
+                type="button"
+                onClick={onToggleSmart}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${
+                  smartMode
+                    ? "bg-green-500 text-white shadow-lg shadow-green-500/30"
+                    : "bg-white/80 text-gray-600"
+                }`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5 2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5" />
+                </svg>
+                智能模式
+              </button>
+              <div className="flex gap-2 text-gray-600 text-sm">
+                <span className="px-2 py-1 bg-white/60 rounded">中</span>
+                <span className="px-2 py-1">🌐</span>
+                <span className="px-2 py-1">😊</span>
+              </div>
+            </div>
+
+            {/* 拼音候选（演示） */}
+            {composing && (
+              <div className="mx-2 mb-1 px-2 py-1.5 bg-white rounded-lg text-sm text-gray-800 flex gap-3 overflow-x-auto">
+                <span className="text-blue-600 font-medium shrink-0">{composing}</span>
+                <span className="text-gray-400 shrink-0">|</span>
+                {["你", "尼", "泥"].map((c) => (
+                  <button key={c} type="button" className="shrink-0 font-medium" onClick={() => onKey(c)}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* 字母键 */}
+            {PINYIN_KEYS.map((row, ri) => (
+              <div key={ri} className="flex justify-center gap-[5px] mb-[7px] px-1">
+                {row.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => handleKey(k)}
+                    className={`key flex-1 max-w-[36px] h-[42px] text-[17px] font-normal ${
+                      k === "⇧" || k === "⌫" ? "key-special flex-[1.3] max-w-[48px] text-[14px]" : ""
+                    }`}
+                  >
+                    {k}
+                  </button>
+                ))}
+              </div>
+            ))}
+
+            {/* 底行 */}
+            <div className="flex justify-center gap-[5px] px-1">
+              <button type="button" className="key key-special w-[52px] h-[42px] text-[14px]">123</button>
+              <button type="button" onClick={onSpace} className="key flex-1 h-[42px] text-[14px]">空格</button>
+              <button
+                type="button"
+                onClick={onSend}
+                className="key key-send w-[72px] h-[42px] text-[15px] font-semibold"
+              >
+                发送
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      function App() {
+        const [smartMode, setSmartMode] = useState(true);
+        const [partnerLang, setPartnerLang] = useState("en");
+        const [messages, setMessages] = useState(INITIAL_MESSAGES.en);
+        const [input, setInput] = useState("");
+        const [composing, setComposing] = useState("");
+
+        const previewTranslation = useMemo(() => {
+          if (!smartMode || !input.trim()) return "";
+          return translateFromZh(input.trim(), partnerLang);
+        }, [input, smartMode, partnerLang]);
+
+        const switchLang = (lang) => {
+          setPartnerLang(lang);
+          setMessages(INITIAL_MESSAGES[lang]);
+          setInput("");
+          setComposing("");
+        };
+
+        const handleKey = useCallback((k) => {
+          if (k.length === 1 && /[a-z]/.test(k)) {
+            setComposing((c) => c + k);
+          } else if (k.length === 1 && /[\u4e00-\u9fff]/.test(k)) {
+            setInput((i) => i + k);
+            setComposing("");
+          }
+        }, []);
+
+        const handleBackspace = () => {
+          if (composing) setComposing((c) => c.slice(0, -1));
+          else setInput((i) => i.slice(0, -1));
+        };
+
+        const handleSend = () => {
+          const text = input.trim();
+          if (!text) return;
+          const translation = smartMode ? translateFromZh(text, partnerLang) : null;
+          setMessages((m) => [
+            ...m,
+            { id: Date.now(), from: "me", text, translation, lang: "zh" },
+          ]);
+          setInput("");
+          setComposing("");
+        };
+
+        const applyPhrase = (phrase) => {
+          setInput(phrase);
+          setComposing("");
+        };
+
+        return (
+          <div className="max-w-md mx-auto min-h-screen flex flex-col">
+            {/* 顶栏 */}
+            <header className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+              <div>
+                <h1 className="text-lg font-semibold">AI 智能输入法</h1>
+                <p className="text-xs text-gray-500">原型演示 · Steam 场景</p>
+              </div>
+              <SmartBadge on={smartMode} />
+            </header>
+
+            {/* Steam 聊天区 */}
+            <section className="flex-1 steam-panel flex flex-col min-h-0">
+              <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded bg-[#66c0f4]/20 flex items-center justify-center text-sm">🎮</div>
+                  <div>
+                    <div className="text-sm font-medium">Steam · 好友聊天</div>
+                    <div className="text-xs text-gray-500">
+                      {partnerLang === "en" ? "Player_One (英语)" : "田中さん (日语)"}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => switchLang("en")}
+                    className={`px-2 py-1 rounded ${partnerLang === "en" ? "bg-[#66c0f4]/30 text-[#66c0f4]" : "text-gray-500"}`}
+                  >
+                    EN
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchLang("ja")}
+                    className={`px-2 py-1 rounded ${partnerLang === "ja" ? "bg-[#66c0f4]/30 text-[#66c0f4]" : "text-gray-500"}`}
+                  >
+                    JP
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-3 py-4">
+                {messages.map((msg) => (
+                  <ChatBubble key={msg.id} msg={msg} smartMode={smartMode} />
+                ))}
+              </div>
+
+              {/* 快捷短语 */}
+              <div className="px-3 py-2 border-t border-white/5">
+                <div className="text-xs text-gray-500 mb-1.5">快捷回复（点选填入）</div>
+                <div className="flex gap-1.5 overflow-x-auto pb-1">
+                  {QUICK_PHRASES.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => applyPhrase(p)}
+                      className="shrink-0 text-xs px-2.5 py-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10"
+                    >
+                      {p.length > 12 ? p.slice(0, 12) + "…" : p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 输入框 */}
+              <div className="px-3 py-2 border-t border-white/10">
+                <div className="flex items-center gap-2 bg-[#1e2328] rounded-xl px-3 py-2">
+                  <input
+                    readOnly
+                    value={input + (composing ? composing : "")}
+                    placeholder={smartMode ? "输入中文，智能翻译成外语…" : "输入消息…"}
+                    className="flex-1 bg-transparent text-[15px] outline-none placeholder:text-gray-600"
+                  />
+                  {smartMode && <SmartBadge on />}
+                </div>
+              </div>
+
+              {/* 智能模式翻译预览 */}
+              {smartMode && input.trim() && (
+                <div className="preview-bar px-4 py-2.5">
+                  <div className="text-xs text-green-400/80 mb-1 flex items-center gap-1">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2h8v2h-2.15c-.63 2.15-1.66 4.16-3.05 5.88l2.7 2.7-1.42 1.49z" />
+                    </svg>
+                    发送预览（{partnerLang === "en" ? "英语" : "日语"} + 中文对照）
+                  </div>
+                  <div className="text-[15px] text-white font-medium">{previewTranslation}</div>
+                  <div className="text-sm text-gray-500 mt-0.5">{input}</div>
+                </div>
+              )}
+            </section>
+
+            {/* 键盘 */}
+            <Keyboard
+              smartMode={smartMode}
+              onToggleSmart={() => setSmartMode((s) => !s)}
+              composing={composing}
+              onKey={handleKey}
+              onSpace={() => setInput((i) => i + " ")}
+              onBackspace={handleBackspace}
+              onSend={handleSend}
+            />
+
+            {/* 说明 */}
+            <footer className="px-4 py-2 text-center text-[11px] text-gray-600 bg-[#0a0e12]">
+              {smartMode
+                ? "智能模式：对方消息自动附中文 · 你输入中文自动译成外语并双语发送"
+                : "普通模式：标准中文输入，无自动翻译"}
+            </footer>
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>

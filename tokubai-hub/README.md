@@ -25,14 +25,24 @@
 
 ## セットアップ
 
+### Windows 用户（最简单）
+
+1. 安装 [Node.js LTS](https://nodejs.org/)（如果还没装）
+2. 双击 `tokubai-hub` 文件夹里的 **`start.bat`**
+3. 等终端显示 `Ready` 后，浏览器打开 **http://localhost:3000**
+
+### 命令行启动
+
 ```bash
 cd tokubai-hub
 npm run demo
 ```
 
-`npm run demo` は依存関係のインストール、`.env` 作成、データベース初期化、開発サーバー起動を一括で行います。
+`npm run demo` 会自动：安装依赖、创建 `.env`、初始化数据库、启动服务器。
 
-ブラウザで **http://localhost:3000** を開いてください。
+浏览器打开 **http://localhost:3000**
+
+> **注意**：必须先看到终端里出现 `Ready`，再打开浏览器。如果直接打开网页会出现「连接被拒绝」。
 
 ### 手動セットアップ
 

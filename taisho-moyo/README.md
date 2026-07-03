@@ -12,7 +12,12 @@ npm install
 npm start
 ```
 
-浏览器打开：**http://localhost:5173**
+浏览器打开：**http://localhost:3000**
+
+```bash
+npm run serve   # 构建 + 启动（推荐，端口 3000）
+npm start       # 开发模式（热更新）
+```
 
 ## 功能（Demo）
 

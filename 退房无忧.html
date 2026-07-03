@@ -4,31 +4,44 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>退房无忧 — 正在打开</title>
-  <meta http-equiv="refresh" content="0;url=http://localhost:5173/" />
   <style>
+    * { box-sizing: border-box; }
     body {
-      font-family: system-ui, sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      background: #f0fdfa;
-      color: #0f766e;
+      font-family: system-ui, "PingFang SC", sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; margin: 0;
+      background: linear-gradient(135deg, #0d9488, #0f766e);
+      color: white;
     }
-    a { color: #0d9488; font-weight: bold; }
-    p { text-align: center; line-height: 1.8; }
-    code { background: #ccfbf1; padding: 2px 6px; border-radius: 4px; }
+    .card {
+      background: white; color: #0f172a;
+      border-radius: 1.25rem; padding: 2rem;
+      max-width: 360px; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+    h1 { margin: 0 0 .5rem; font-size: 1.5rem; color: #0d9488; }
+    p { margin: .5rem 0; font-size: .9rem; color: #64748b; line-height: 1.6; }
+    a.btn {
+      display: block; margin-top: 1.25rem; padding: .875rem;
+      background: #0d9488; color: white; text-decoration: none;
+      border-radius: .875rem; font-weight: 700;
+    }
+    a.btn:hover { background: #0f766e; }
+    code { background: #f0fdfa; color: #0d9488; padding: 2px 8px; border-radius: 4px; font-size: .8rem; }
   </style>
 </head>
 <body>
-  <div>
-    <p>正在打开 <a href="http://localhost:5173/">退房无忧</a>…</p>
-    <p style="font-size: 14px; color: #64748b;">
-      若未自动跳转，请先在终端运行：<br />
-      <code>cd taisho-moyo && npm start</code>
+  <div class="card">
+    <h1>🛡️ 退房无忧</h1>
+    <p>日本租房退房自检助手<br/>点击下方按钮打开 Demo</p>
+    <a class="btn" href="http://localhost:3000/" id="link">打开退房无忧</a>
+    <p style="font-size:.75rem;margin-top:1rem">
+      若打不开，终端运行：<br/><code>cd taisho-moyo && npm run serve</code>
     </p>
   </div>
-  <script>location.replace("http://localhost:5173/");</script>
+  <script>
+    // 自动跳转退房无忧专用端口（3000），避免与仓库其他项目冲突
+    setTimeout(() => { location.href = "http://localhost:3000/"; }, 800);
+  </script>
 </body>
 </html>

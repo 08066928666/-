@@ -5,10 +5,11 @@
   "description": "退房无忧 — 日本租房退房自检助手",
   "type": "module",
   "scripts": {
-    "dev": "node ./node_modules/vite/bin/vite.js --host 0.0.0.0 --port 5173",
-    "start": "node ./node_modules/vite/bin/vite.js --host 0.0.0.0 --port 5173",
+    "dev": "node ./node_modules/vite/bin/vite.js --host 0.0.0.0 --port 3000",
+    "start": "node ./node_modules/vite/bin/vite.js --host 0.0.0.0 --port 3000",
     "build": "node ./node_modules/vite/bin/vite.js build",
-    "preview": "node ./node_modules/vite/bin/vite.js preview --host 0.0.0.0 --port 5173"
+    "serve": "npm run build && node serve.mjs",
+    "preview": "node serve.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

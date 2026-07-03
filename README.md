@@ -14,7 +14,9 @@ npm install
 npm start
 ```
 
-打开：**http://localhost:5173**
+打开：**http://localhost:3000**
+
+> 注意：端口 3000 专用于退房无忧。仓库根目录的 `index.html` 是其他项目，请勿混淆。
 
 ## 2. Haseko 报价点餐原型（施工方 B 端）
 

@@ -1,4 +1,10 @@
-# AI 智能输入法 · 原型
+# AI 智能输入法 · Web 演示（非最终产品）
+
+> **请安装原生输入法**：[`ai-ime-mobile`](../ai-ime-mobile/README.md)  
+> - Android：`ai-ime-android/` → 打包 APK，系统设置里启用  
+> - iOS：`ai-ime-ios/` → Xcode 键盘扩展，安装到 iPhone  
+>
+> 本 Web 目录仅为演示，词库较大可能导致**黑屏或加载慢**，不作为正式方案。
 
 对标苹果系统输入法，核心差异是 **AI 智能模式**：在聊天场景中自动完成「看懂对方」和「用中文回复」的双向翻译，省去「翻译 → 复制 → 粘贴 → 发送」的步骤。
 
@@ -52,8 +58,10 @@ node scripts/build-dict.mjs /tmp/pinyin.txt
 
 | 平台 | 目录 | 状态 |
 |------|------|------|
-| Web 原型 | `ai-ime/index.html` | 可交互演示 |
-| **Windows** | `ai-ime-windows/` | 可运行，支持 Steam 全局场景 |
+| **Android** | `ai-ime-android/` | **可安装 APK（系统输入法）** |
+| **iOS** | `ai-ime-ios/` | **键盘扩展（需 Mac + Xcode 编译）** |
+| Web 演示 | `ai-ime/index.html` | 仅参考，可能黑屏 |
+| Windows | `ai-ime-windows/` | PC 游戏场景（热键 + 悬浮栏） |
 
 ## 技术路线（正式版）
 

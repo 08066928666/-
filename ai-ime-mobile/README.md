@@ -1,10 +1,11 @@
 # AI 翻译输入法 — 移动端
 
-**自带翻译功能的普通中文输入法**，可安装到 iOS / Android。
+**不自己做输入法**：在市面成熟输入法上**加装实时翻译**（发：边打边译 / 发送双语；收：复制外文 → 中文对照）。
 
-> **iPhone 用户且不想写代码？** 直接看 **[IPHONE_无需开发.md](IPHONE_无需开发.md)**：App Store 装「仓输入法」+ 系统「翻译」App 即可，无需编译本仓库。
+> 完整产品方案见 **[PRODUCT_加装翻译.md](PRODUCT_加装翻译.md)**  
+> iPhone 不想写代码：**[IPHONE_无需开发.md](IPHONE_无需开发.md)**（仓输入法 + 系统翻译 App）
 
-详见 [ROADMAP.md](ROADMAP.md)（为何网页/轻量版不够流畅、怎么办）。
+详见 [ROADMAP.md](ROADMAP.md)。
 
 ## 推荐技术路线（采用 GitHub 成熟开源代码）
 

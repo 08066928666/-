@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="./pinyin-engine.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
       :root {
@@ -67,8 +68,23 @@
         0%, 100% { opacity: 1; }
         50% { opacity: 0.6; }
       }
-      .smart-pulse {
-        animation: pulse-smart 2s ease-in-out infinite;
+      .candidate-chip {
+        background: #fff;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 17px;
+        color: #111;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        white-space: nowrap;
+      }
+      .candidate-chip.active {
+        background: #007aff;
+        color: #fff;
+      }
+      .candidate-num {
+        font-size: 11px;
+        opacity: 0.55;
+        margin-right: 4px;
       }
     </style>
   </head>
@@ -77,43 +93,8 @@
     <script type="text/babel">
       const { useState, useMemo, useCallback, useEffect, useRef } = React;
 
-      // 演示用拼音表（正式版接完整词库）
-      const PINYIN_MAP = {
-        wo: ["我", "握", "窝", "沃"],
-        ni: ["你", "尼", "泥", "腻"],
-        hao: ["好", "号", "毫", "豪"],
-        ma: ["吗", "妈", "马", "嘛"],
-        de: ["的", "得", "地"],
-        shi: ["是", "时", "事", "十"],
-        le: ["了", "乐"],
-        zai: ["再", "在", "载"],
-        lai: ["来", "赖"],
-        yi: ["一", "以", "已", "意"],
-        ju: ["局", "举", "句"],
-        ba: ["吧", "把", "八"],
-        xie: ["谢", "写", "些"],
-        hen: ["很", "恨"],
-        li: ["厉", "里", "理", "力"],
-        hai: ["还", "海", "害"],
-        ke: ["可", "科", "克"],
-        yiqi: ["一起"],
-        nihao: ["你好"],
-        xiexie: ["谢谢"],
-        zaijian: ["再见"],
-        meiwenti: ["没问题"],
-        jiayou: ["加油"],
-        dagao: ["打得好"],
-        zaihui: ["再会"],
-      };
-
       function getCandidates(pinyin) {
-        if (!pinyin) return [];
-        const key = pinyin.toLowerCase();
-        if (PINYIN_MAP[key]) return PINYIN_MAP[key];
-        const matches = Object.entries(PINYIN_MAP)
-          .filter(([k]) => k.startsWith(key))
-          .flatMap(([, v]) => v);
-        return [...new Set(matches)].slice(0, 6);
+        return window.PinyinEngine ? window.PinyinEngine.getCandidates(pinyin) : [];
       }
 
       // 演示用翻译词典（正式版接 AI API）
@@ -219,7 +200,38 @@
         );
       }
 
-      function Keyboard({ onKey, onSend, smartMode, onToggleSmart, composing, candidates, onSpace, onBackspace, onSelectCandidate }) {
+      function CandidateBar({ composing, candidates, onSelect }) {
+        if (!composing) return null;
+        return (
+          <div className="mx-2 mb-2 px-2 py-2 bg-white rounded-xl shadow-sm">
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <span className="text-blue-600 font-semibold text-sm">{composing}</span>
+              <span className="text-gray-400 text-xs">拼音</span>
+            </div>
+            {candidates.length > 0 ? (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {candidates.map((c, i) => (
+                  <button
+                    key={`${c}-${i}`}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => onSelect(c)}
+                    className={`candidate-chip ${i === 0 ? "active" : ""}`}
+                  >
+                    <span className="candidate-num">{i + 1}</span>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500 px-1">继续输入拼音，或切换系统输入法直接打中文</p>
+            )}
+            <p className="text-[10px] text-gray-400 mt-1.5 px-1">空格/1选首词 · 2-9选候选 · Esc 清空拼音</p>
+          </div>
+        );
+      }
+
+      function Keyboard({ onKey, onSend, smartMode, onToggleSmart, composing, inputMode, onInputModeChange, onSpace, onBackspace, onSelectCandidate }) {
         const handleKey = (k) => {
           if (k === "⌫") onBackspace();
           else if (k === "⇧") return;
@@ -245,36 +257,25 @@
                 智能模式
               </button>
               <div className="flex gap-2 text-gray-600 text-sm">
-                <span className="px-2 py-1 bg-white/60 rounded">中</span>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => onInputModeChange("builtin")}
+                  className={`px-2 py-1 rounded text-xs ${inputMode === "builtin" ? "bg-white text-blue-600 font-semibold" : ""}`}
+                >
+                  拼
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => onInputModeChange("system")}
+                  className={`px-2 py-1 rounded text-xs ${inputMode === "system" ? "bg-white text-blue-600 font-semibold" : ""}`}
+                >
+                  中
+                </button>
                 <span className="px-2 py-1">🌐</span>
-                <span className="px-2 py-1">😊</span>
               </div>
             </div>
-
-            {/* 拼音候选（演示） */}
-            {composing && (
-              <div className="mx-2 mb-1 px-2 py-1.5 bg-white rounded-lg text-sm text-gray-800 flex gap-3 overflow-x-auto items-center">
-                <span className="text-blue-600 font-medium shrink-0">{composing}</span>
-                {candidates.length > 0 ? (
-                  <>
-                    <span className="text-gray-400 shrink-0">|</span>
-                    {candidates.map((c, i) => (
-                      <button
-                        key={`${c}-${i}`}
-                        type="button"
-                        className="shrink-0 font-medium px-1 hover:text-blue-600"
-                        onClick={() => onSelectCandidate(c)}
-                      >
-                        {i === 0 ? <span className="text-blue-600">{c}</span> : c}
-                      </button>
-                    ))}
-                    <span className="text-gray-400 text-xs shrink-0 ml-auto">空格选首字</span>
-                  </>
-                ) : (
-                  <span className="text-gray-400 text-xs">继续输入拼音，或直接打中文</span>
-                )}
-              </div>
-            )}
 
             {/* 字母键 */}
             {PINYIN_KEYS.map((row, ri) => (
@@ -318,6 +319,7 @@
         const [messages, setMessages] = useState(INITIAL_MESSAGES.en);
         const [inputText, setInputText] = useState("");
         const [composing, setComposing] = useState("");
+        const [inputMode, setInputMode] = useState("builtin"); // builtin=内置拼音(iOS式) | system=系统输入法
         const inputRef = useRef(null);
 
         const candidates = useMemo(() => getCandidates(composing), [composing]);
@@ -353,11 +355,81 @@
           inputRef.current?.focus();
         }, []);
 
-        const selectCandidate = useCallback((char) => {
-          appendInput(char);
+        const selectCandidate = useCallback((text) => {
+          appendInput(text);
           setComposing("");
           inputRef.current?.focus();
         }, [appendInput]);
+
+        const handleSend = useCallback(() => {
+          const text = readInput();
+          if (!text) return;
+          const translation = smartMode ? translateFromZh(text, partnerLang) : null;
+          setMessages((m) => [
+            ...m,
+            { id: Date.now(), from: "me", text, translation, lang: "zh" },
+          ]);
+          writeInput("");
+          setComposing("");
+        }, [readInput, smartMode, partnerLang, writeInput]);
+
+        const confirmFirstCandidate = useCallback(() => {
+          if (composing && candidates.length > 0) {
+            selectCandidate(candidates[0]);
+            return true;
+          }
+          return false;
+        }, [composing, candidates, selectCandidate]);
+
+        const handleTextareaKeyDown = useCallback((e) => {
+          if (inputMode === "builtin") {
+            if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+              e.preventDefault();
+              setComposing((c) => c + e.key.toLowerCase());
+              return;
+            }
+
+            if (e.key === " " && composing) {
+              e.preventDefault();
+              confirmFirstCandidate();
+              return;
+            }
+
+            if (e.key === "Backspace" && composing) {
+              e.preventDefault();
+              setComposing((c) => c.slice(0, -1));
+              return;
+            }
+
+            if (e.key === "Escape" && composing) {
+              e.preventDefault();
+              setComposing("");
+              return;
+            }
+
+            if (e.key >= "1" && e.key <= "9" && composing && candidates.length > 0) {
+              const idx = parseInt(e.key, 10) - 1;
+              if (candidates[idx]) {
+                e.preventDefault();
+                selectCandidate(candidates[idx]);
+                return;
+              }
+            }
+
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              if (composing && candidates.length > 0) {
+                confirmFirstCandidate();
+              } else {
+                handleSend();
+              }
+              return;
+            }
+          } else if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+            e.preventDefault();
+            handleSend();
+          }
+        }, [inputMode, composing, candidates, confirmFirstCandidate, selectCandidate, handleSend]);
 
         const switchLang = (lang) => {
           setPartnerLang(lang);
@@ -367,13 +439,11 @@
         };
 
         const handleKey = useCallback((k) => {
+          if (inputMode !== "builtin") return;
           if (k.length === 1 && /[a-z]/.test(k)) {
             setComposing((c) => c + k);
-          } else if (k.length === 1 && /[\u4e00-\u9fff]/.test(k)) {
-            appendInput(k);
-            setComposing("");
           }
-        }, [appendInput]);
+        }, [inputMode]);
 
         const handleBackspace = useCallback(() => {
           if (composing) {
@@ -393,18 +463,6 @@
             appendInput(" ");
           }
         }, [composing, candidates, selectCandidate, appendInput]);
-
-        const handleSend = useCallback(() => {
-          const text = readInput();
-          if (!text) return;
-          const translation = smartMode ? translateFromZh(text, partnerLang) : null;
-          setMessages((m) => [
-            ...m,
-            { id: Date.now(), from: "me", text, translation, lang: "zh" },
-          ]);
-          writeInput("");
-          setComposing("");
-        }, [readInput, smartMode, partnerLang, writeInput]);
 
         const applyPhrase = (phrase) => {
           writeInput(phrase);
@@ -478,35 +536,21 @@
 
               {/* 输入框 */}
               <div className="px-3 py-2 border-t border-white/10">
-                {composing && (
-                  <div className="mb-1.5 px-2 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-sm text-blue-300">
-                    屏幕键盘拼音：<span className="font-mono text-white">{composing}</span>
-                    {candidates.length > 0 && (
-                      <span className="text-gray-400 ml-2">
-                        → 点下方候选，或按空格选「{candidates[0]}」
-                      </span>
-                    )}
-                  </div>
-                )}
-                <div className="flex items-start gap-2 bg-[#1e2328] rounded-xl px-3 py-2">
+                <CandidateBar composing={inputMode === "builtin" ? composing : ""} candidates={candidates} onSelect={selectCandidate} />
+                <div className="flex items-start gap-2 bg-[#1e2328] rounded-xl px-3 py-2 ring-1 ring-white/5 focus-within:ring-green-500/40">
                   <textarea
                     ref={inputRef}
                     rows={2}
                     defaultValue=""
                     onInput={syncInput}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                    placeholder={smartMode ? "在这里用电脑输入法打字（微软拼音/搜狗等）…" : "输入消息…"}
+                    onKeyDown={handleTextareaKeyDown}
+                    placeholder="打拼音如 nihao → 选「你好」· 也可直接粘贴中文"
                     className="flex-1 bg-transparent text-[15px] outline-none placeholder:text-gray-600 text-white resize-none leading-relaxed"
                   />
                   {smartMode && <SmartBadge on />}
                 </div>
                 <p className="text-[11px] text-gray-600 mt-1 px-1">
-                  电脑打字：先点输入框，用系统中文输入法 · 屏幕键盘：点字母后选汉字 · 快捷回复：点上方按钮
+                  iOS 式输入：连续拼音出词组 · 空格确认 · 1-9 选候选 · 两次 Enter 发送
                 </p>
               </div>
 
@@ -531,6 +575,8 @@
               onToggleSmart={() => setSmartMode((s) => !s)}
               composing={composing}
               candidates={candidates}
+              inputMode={inputMode}
+              onInputModeChange={(mode) => { setInputMode(mode); setComposing(""); }}
               onKey={handleKey}
               onSpace={handleSpace}
               onBackspace={handleBackspace}

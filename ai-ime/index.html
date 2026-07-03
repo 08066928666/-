@@ -4,8 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
-    <title>AI 智能输入法 · 原型</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>AI 智能输入法 · iOS 原型</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="./dict-words.js"></script>
@@ -13,109 +12,147 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
       :root {
-        --kb-bg: #d1d5db;
-        --key-bg: #ffffff;
-        --key-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
-        --accent: #007aff;
-        --smart: #34c759;
+        --ios-blue: #007aff;
+        --ios-green: #34c759;
+        --ios-bg: #f2f2f7;
+        --ios-keyboard: #d1d3d9;
+        --ios-key: #ffffff;
+        --ios-key-special: #abb0bc;
+        --ios-separator: rgba(60, 60, 67, 0.18);
+        --ios-label: #3c3c43;
+        --ios-secondary: rgba(60, 60, 67, 0.6);
       }
+      * { box-sizing: border-box; }
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Helvetica Neue", sans-serif;
         -webkit-font-smoothing: antialiased;
-        background: #0f1419;
-        color: #e7e9ea;
+        background: linear-gradient(160deg, #1c1c1e 0%, #2c2c2e 50%, #1c1c1e 100%);
         min-height: 100vh;
         margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 12px;
       }
-      .key {
-        background: var(--key-bg);
-        box-shadow: var(--key-shadow);
-        border-radius: 5px;
-        user-select: none;
-        touch-action: manipulation;
+      .iphone-shell {
+        width: 100%;
+        max-width: 390px;
+        height: min(844px, calc(100vh - 48px));
+        background: var(--ios-bg);
+        border-radius: 44px;
+        box-shadow: 0 0 0 10px #1c1c1e, 0 0 0 12px #3a3a3c, 0 24px 80px rgba(0, 0, 0, 0.55);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        position: relative;
       }
-      .key:active {
-        background: #c7c7cc;
-        transform: scale(0.97);
+      .iphone-notch {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 126px;
+        height: 34px;
+        background: #1c1c1e;
+        border-radius: 20px;
+        z-index: 50;
       }
-      .key-special {
-        background: #acb3bb;
+      .ios-status-bar {
+        height: 54px;
+        padding: 14px 28px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 15px;
+        font-weight: 600;
+        color: #000;
+        background: var(--ios-bg);
+        flex-shrink: 0;
       }
-      .key-send {
-        background: var(--accent);
+      .ios-nav-bar {
+        background: rgba(242, 242, 247, 0.92);
+        backdrop-filter: blur(20px);
+        border-bottom: 0.5px solid var(--ios-separator);
+        padding: 8px 16px 10px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .ios-nav-title { font-size: 17px; font-weight: 600; color: #000; }
+      .ios-nav-sub { font-size: 12px; color: var(--ios-secondary); margin-top: 2px; }
+      .ios-messages { flex: 1; overflow-y: auto; padding: 12px 16px; background: var(--ios-bg); }
+      .bubble-me {
+        background: var(--ios-blue);
         color: #fff;
+        border-radius: 18px;
+        border-bottom-right-radius: 4px;
+        padding: 8px 12px;
+        font-size: 16px;
+        line-height: 1.35;
+        max-width: 78%;
+        margin-left: auto;
+        margin-bottom: 4px;
       }
-      .key-send:active {
-        background: #0062cc;
+      .bubble-them {
+        background: #e9e9eb;
+        color: #000;
+        border-radius: 18px;
+        border-bottom-left-radius: 4px;
+        padding: 8px 12px;
+        font-size: 16px;
+        line-height: 1.35;
+        max-width: 78%;
+        margin-bottom: 4px;
       }
-      .smart-glow {
-        box-shadow: 0 0 0 2px var(--smart), 0 0 24px rgba(52, 199, 89, 0.35);
+      .bubble-sub { font-size: 13px; opacity: 0.82; margin-top: 6px; padding-top: 6px; border-top: 0.5px solid rgba(255,255,255,0.25); }
+      .bubble-them .bubble-sub { border-top-color: rgba(0,0,0,0.08); color: var(--ios-secondary); opacity: 1; }
+      .ios-composer { background: var(--ios-bg); border-top: 0.5px solid var(--ios-separator); padding: 8px 12px 6px; }
+      .ios-composer-row { display: flex; align-items: flex-end; gap: 8px; }
+      .ios-composer-plus {
+        width: 32px; height: 32px; border-radius: 16px; background: #e9e9eb; color: var(--ios-secondary);
+        font-size: 22px; line-height: 30px; text-align: center; flex-shrink: 0; border: none;
       }
-      .subtitle-line {
-        border-left: 3px solid var(--smart);
-        padding-left: 10px;
-        margin-top: 6px;
-        color: #8b98a5;
-        font-size: 13px;
+      .ios-composer-field {
+        flex: 1; min-height: 36px; background: #fff; border: 0.5px solid rgba(60,60,67,0.15);
+        border-radius: 18px; padding: 8px 14px; font-size: 17px; line-height: 1.35; color: #000;
       }
-      .preview-bar {
-        background: linear-gradient(180deg, rgba(52, 199, 89, 0.12) 0%, rgba(15, 20, 25, 0.95) 100%);
-        border-top: 1px solid rgba(52, 199, 89, 0.3);
-      }
-      .steam-panel {
-        background: linear-gradient(180deg, #1b2838 0%, #171d25 100%);
-      }
-      @keyframes pulse-smart {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.6; }
-      }
-      .candidate-chip {
-        background: #fff;
-        border-radius: 8px;
-        padding: 6px 12px;
-        font-size: 17px;
-        color: #111;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-        white-space: nowrap;
-      }
-      .candidate-chip.active {
-        background: #007aff;
-        color: #fff;
-      }
+      .ios-preedit { text-decoration: underline; text-decoration-color: var(--ios-blue); text-underline-offset: 3px; color: var(--ios-blue); }
+      .ios-caret { display: inline-block; width: 2px; height: 1.05em; background: var(--ios-blue); margin-left: 1px; vertical-align: text-bottom; animation: blink 1s step-end infinite; }
+      @keyframes blink { 50% { opacity: 0; } }
+      .ios-smart-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 10px; background: rgba(52,199,89,0.15); color: #248a3d; margin-top: 6px; }
+      .ios-preview { margin-top: 8px; padding: 10px 12px; background: rgba(52,199,89,0.08); border-radius: 12px; border: 0.5px solid rgba(52,199,89,0.2); }
+      .ios-preview-label { font-size: 11px; color: #248a3d; font-weight: 600; margin-bottom: 4px; }
+      .ios-preview-en { font-size: 15px; color: #000; font-weight: 500; }
+      .ios-preview-zh { font-size: 13px; color: var(--ios-secondary); margin-top: 2px; }
+      .ios-keyboard-wrap { background: var(--ios-keyboard); flex-shrink: 0; }
+      .ios-kb-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px 4px; min-height: 36px; }
+      .ios-kb-toolbar button { border: none; background: transparent; font-size: 13px; font-weight: 600; color: var(--ios-blue); padding: 4px 8px; }
+      .ios-kb-toolbar .smart-on { color: #248a3d; background: rgba(52,199,89,0.15); border-radius: 8px; }
       .ios-candidate-strip {
-        background: #cfd4da;
-        border-top: 1px solid #b8bec6;
-        min-height: 44px;
+        min-height: 44px; display: flex; align-items: center; padding: 0 4px; overflow-x: auto;
+        border-top: 0.5px solid rgba(0,0,0,0.08); background: #d1d3d9;
       }
-      .ios-ime-field {
-        min-height: 44px;
-        line-height: 1.5;
-        word-break: break-word;
-        cursor: text;
+      .ios-candidate-strip.idle { justify-content: center; font-size: 13px; color: var(--ios-secondary); }
+      .ios-cand-item { flex-shrink: 0; border: none; background: transparent; padding: 8px 14px; font-size: 20px; color: #000; position: relative; }
+      .ios-cand-item:not(:last-child)::after {
+        content: ""; position: absolute; right: 0; top: 25%; height: 50%; width: 0.5px; background: rgba(0,0,0,0.12);
       }
-      .ios-preedit {
-        text-decoration: underline;
-        text-decoration-color: #007aff;
-        text-underline-offset: 3px;
-        color: #7ec0ff;
+      .ios-cand-item:first-child { font-size: 24px; font-weight: 500; color: var(--ios-blue); }
+      .ios-key {
+        background: var(--ios-key); border: none; border-radius: 5px; box-shadow: 0 1px 0 #898a8d;
+        color: #000; font-size: 22px; user-select: none; touch-action: manipulation; font-family: inherit;
       }
-      .ios-caret {
-        display: inline-block;
-        width: 2px;
-        height: 1.1em;
-        background: #007aff;
-        margin-left: 1px;
-        vertical-align: text-bottom;
-        animation: blink 1s step-end infinite;
-      }
-      @keyframes blink {
-        50% { opacity: 0; }
-      }
-      .candidate-num {
-        font-size: 11px;
-        opacity: 0.55;
-        margin-right: 4px;
-      }
+      .ios-key:active { background: #b8b8bc; }
+      .ios-key.special { background: var(--ios-key-special); font-size: 16px; }
+      .ios-key.return { background: var(--ios-blue); color: #fff; font-size: 16px; font-weight: 600; box-shadow: none; }
+      .ios-key.return:active { background: #0062cc; }
+      .ios-key-row { display: flex; justify-content: center; gap: 6px; padding: 0 3px 7px; }
+      .ios-key-row.indent { padding-left: 16px; padding-right: 16px; }
+      .ios-home-indicator { width: 134px; height: 5px; background: #000; border-radius: 3px; opacity: 0.2; margin: 8px auto 6px; }
+      .ios-quick-chips { display: flex; gap: 6px; overflow-x: auto; padding: 0 0 8px; }
+      .ios-chip { flex-shrink: 0; font-size: 13px; padding: 6px 12px; border-radius: 16px; background: #fff; border: 0.5px solid rgba(60,60,67,0.12); color: var(--ios-label); }
+      .ios-seg { display: flex; background: rgba(118,118,128,0.12); border-radius: 8px; padding: 2px; }
+      .ios-seg button { border: none; background: transparent; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 6px; color: var(--ios-secondary); }
+      .ios-seg button.active { background: #fff; color: #000; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     </style>
   </head>
   <body>
@@ -163,13 +200,7 @@
         return "(Auto) " + text;
       }
 
-      const PINYIN_KEYS = [
-        ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
-        ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-        ["⇧", "z", "x", "c", "v", "b", "n", "m", "⌫"],
-      ];
-
-      const INITIAL_MESSAGES = {
+      const PUNCT_KEYS = ["，", "。", "？", "！", "、", "…", "~", "：", "；", "（", "）", "「", "」"];
         en: [
           { id: 1, from: "them", text: "Hey! Nice game earlier, want to team up again?", lang: "en" },
           { id: 2, from: "them", text: "GG! You're really good at this.", lang: "en" },
@@ -189,41 +220,24 @@
         "可以，加我吧。",
       ];
 
-      function SmartBadge({ on }) {
-        return (
-          <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-              on ? "bg-green-500/20 text-green-400 smart-pulse" : "bg-gray-600/30 text-gray-500"
-            }`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${on ? "bg-green-400" : "bg-gray-500"}`} />
-            AI 智能
-          </span>
-        );
-      }
-
       function ChatBubble({ msg, smartMode }) {
         const isMe = msg.from === "me";
         const subtitle = smartMode && !isMe ? translateToZh(msg.text) : null;
         const showBilingual = smartMode && isMe && msg.translation;
 
         return (
-          <div className={`flex ${isMe ? "justify-end" : "justify-start"} mb-3`}>
-            <div
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${
-                isMe ? "bg-[#1a6dcc] text-white rounded-br-md" : "bg-[#2a475e] text-[#c7d5e0] rounded-bl-md"
-              }`}
-            >
+          <div className={`flex ${isMe ? "justify-end" : "justify-start"} mb-2`}>
+            <div className={isMe ? "bubble-me" : "bubble-them"}>
               {showBilingual ? (
                 <>
-                  <div className="text-[15px] leading-snug">{msg.translation}</div>
-                  <div className="subtitle-line text-white/70 border-white/30">{msg.text}</div>
+                  <div>{msg.translation}</div>
+                  <div className="bubble-sub">{msg.text}</div>
                 </>
               ) : (
-                <div className="text-[15px] leading-snug">{msg.text}</div>
+                <div>{msg.text}</div>
               )}
               {subtitle && subtitle !== msg.text && (
-                <div className="subtitle-line">{subtitle}</div>
+                <div className="bubble-sub">{subtitle}</div>
               )}
             </div>
           </div>
@@ -232,23 +246,18 @@
 
       function CandidateBar({ composing, candidates, onSelect }) {
         if (!composing) {
-          return (
-            <div className="ios-candidate-strip flex items-center px-3 text-xs text-gray-500">
-              iOS 拼音 · 词库 {window.PinyinEngine?.dictSize?.toLocaleString() || "—"} 条
-            </div>
-          );
+          return <div className="ios-candidate-strip idle">拼音</div>;
         }
         return (
-          <div className="ios-candidate-strip flex items-center gap-1.5 px-2 py-1.5 overflow-x-auto">
+          <div className="ios-candidate-strip">
             {candidates.map((c, i) => (
               <button
                 key={`${c}-${i}`}
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onSelect(c)}
-                className={`candidate-chip ${i === 0 ? "active" : ""}`}
+                className="ios-cand-item"
               >
-                {i < 9 && <span className="candidate-num">{i + 1}</span>}
                 {c}
               </button>
             ))}
@@ -258,10 +267,7 @@
 
       function IosImeField({ inputText, composing, focused, onFocus, placeholder }) {
         return (
-          <div
-            className="ios-ime-field flex-1 text-[16px] text-white"
-            onMouseDown={(e) => { e.preventDefault(); onFocus(); }}
-          >
+          <div className="ios-composer-field" onMouseDown={(e) => { e.preventDefault(); onFocus(); }}>
             {inputText || composing ? (
               <>
                 <span>{inputText}</span>
@@ -269,13 +275,11 @@
                 {focused && <span className="ios-caret" />}
               </>
             ) : (
-              <span className="text-gray-500">{placeholder}</span>
+              <span style={{ color: "#c7c7cc" }}>{placeholder}</span>
             )}
           </div>
         );
       }
-
-      const PUNCT_KEYS = ["，", "。", "？", "！", "、", "…", "~", "：", "；", "（", "）", "「", "」"];
 
       function Keyboard({ onKey, onSend, smartMode, onToggleSmart, composing, inputMode, onInputModeChange, onSpace, onBackspace, onSelectCandidate, candidates }) {
         const [kbLayout, setKbLayout] = React.useState("letters");
@@ -283,107 +287,65 @@
         const handleKey = (k) => {
           if (k === "⌫") onBackspace();
           else if (k === "⇧") return;
-          else if (k === "'") onKey("'");
           else onKey(k);
         };
 
+        const keyW = (w) => ({ flex: w, minWidth: 0, height: 42 });
+
         return (
-          <div className={`bg-[var(--kb-bg)] rounded-t-2xl pt-2 pb-6 px-1 ${smartMode ? "smart-glow" : ""}`}>
-            {/* 工具栏 */}
-            <div className="flex items-center justify-between px-3 pb-2">
-              <button
-                type="button"
-                onClick={onToggleSmart}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${
-                  smartMode
-                    ? "bg-green-500 text-white shadow-lg shadow-green-500/30"
-                    : "bg-white/80 text-gray-600"
-                }`}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5 2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5" />
-                </svg>
-                智能模式
+          <div className="ios-keyboard-wrap">
+            <div className="ios-kb-toolbar">
+              <button type="button" className={smartMode ? "smart-on" : ""} onClick={onToggleSmart}>
+                {smartMode ? "AI 智能 · 开" : "AI 智能 · 关"}
               </button>
-              <div className="flex gap-2 text-gray-600 text-sm">
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => onInputModeChange("builtin")}
-                  className={`px-2 py-1 rounded text-xs ${inputMode === "builtin" ? "bg-white text-blue-600 font-semibold" : ""}`}
-                >
-                  拼
-                </button>
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => onInputModeChange("system")}
-                  className={`px-2 py-1 rounded text-xs ${inputMode === "system" ? "bg-white text-blue-600 font-semibold" : ""}`}
-                >
-                  中
-                </button>
-                <span className="px-2 py-1">🌐</span>
+              <div className="ios-seg">
+                <button type="button" className={inputMode === "builtin" ? "active" : ""} onMouseDown={(e) => e.preventDefault()} onClick={() => onInputModeChange("builtin")}>拼</button>
+                <button type="button" className={inputMode === "system" ? "active" : ""} onMouseDown={(e) => e.preventDefault()} onClick={() => onInputModeChange("system")}>中</button>
               </div>
             </div>
 
             <CandidateBar composing={inputMode === "builtin" ? composing : ""} candidates={candidates} onSelect={onSelectCandidate} />
 
             {kbLayout === "letters" ? (
-            <>
-            {/* 字母键 */}
-            {PINYIN_KEYS.map((row, ri) => (
-              <div key={ri} className="flex justify-center gap-[5px] mb-[7px] px-1">
-                {row.map((k) => (
-                  <button
-                    key={k}
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleKey(k)}
-                    className={`key flex-1 max-w-[36px] h-[42px] text-[17px] font-normal ${
-                      k === "⇧" || k === "⌫" ? "key-special flex-[1.3] max-w-[48px] text-[14px]" : ""
-                    }`}
-                  >
-                    {k}
-                  </button>
-                ))}
-              </div>
-            ))}
-
-            {/* 底行 */}
-            <div className="flex justify-center gap-[5px] px-1">
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => setKbLayout((l) => (l === "letters" ? "punct" : "letters"))}
-                className="key key-special w-[52px] h-[42px] text-[14px]"
-              >
-                {kbLayout === "letters" ? "123" : "ABC"}
-              </button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={onSpace} className="key flex-1 h-[42px] text-[14px]">空格</button>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={onSend}
-                className="key key-send w-[72px] h-[42px] text-[15px] font-semibold"
-              >
-                发送
-              </button>
-            </div>
-            </>
+              <>
+                <div className="ios-key-row">
+                  {"qwertyuiop".split("").map((k) => (
+                    <button key={k} type="button" className="ios-key" style={keyW(1)} onMouseDown={(e) => e.preventDefault()} onClick={() => handleKey(k)}>{k}</button>
+                  ))}
+                </div>
+                <div className="ios-key-row indent">
+                  {"asdfghjkl".split("").map((k) => (
+                    <button key={k} type="button" className="ios-key" style={keyW(1)} onMouseDown={(e) => e.preventDefault()} onClick={() => handleKey(k)}>{k}</button>
+                  ))}
+                </div>
+                <div className="ios-key-row indent">
+                  <button type="button" className="ios-key special" style={keyW(1.3)} onMouseDown={(e) => e.preventDefault()}>⇧</button>
+                  {"zxcvbnm".split("").map((k) => (
+                    <button key={k} type="button" className="ios-key" style={keyW(1)} onMouseDown={(e) => e.preventDefault()} onClick={() => handleKey(k)}>{k}</button>
+                  ))}
+                  <button type="button" className="ios-key special" style={keyW(1.3)} onMouseDown={(e) => e.preventDefault()} onClick={() => handleKey("⌫")}>⌫</button>
+                </div>
+                <div className="ios-key-row">
+                  <button type="button" className="ios-key special" style={keyW(1.2)} onMouseDown={(e) => e.preventDefault()} onClick={() => setKbLayout("punct")}>123</button>
+                  <button type="button" className="ios-key" style={keyW(4)} onMouseDown={(e) => e.preventDefault()} onClick={onSpace}>空格</button>
+                  <button type="button" className="ios-key return" style={keyW(1.5)} onMouseDown={(e) => e.preventDefault()} onClick={onSend}>换行</button>
+                </div>
+              </>
             ) : (
-            <>
-            <div className="grid grid-cols-7 gap-[5px] px-2 mb-2">
-              {PUNCT_KEYS.map((p) => (
-                <button key={p} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => onKey(p)} className="key h-[40px] text-lg">{p}</button>
-              ))}
-            </div>
-            <div className="flex justify-center gap-[5px] px-1">
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setKbLayout("letters")} className="key key-special w-[72px] h-[42px] text-[14px]">ABC</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={onSpace} className="key flex-1 h-[42px] text-[14px]">空格</button>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={onSend} className="key key-send w-[72px] h-[42px] text-[15px] font-semibold">发送</button>
-            </div>
-            </>
+              <>
+                <div className="ios-key-row" style={{ flexWrap: "wrap", padding: "0 8px 7px" }}>
+                  {PUNCT_KEYS.map((p) => (
+                    <button key={p} type="button" className="ios-key" style={{ width: 44, height: 42, margin: 3 }} onMouseDown={(e) => e.preventDefault()} onClick={() => onKey(p)}>{p}</button>
+                  ))}
+                </div>
+                <div className="ios-key-row">
+                  <button type="button" className="ios-key special" style={keyW(1.5)} onMouseDown={(e) => e.preventDefault()} onClick={() => setKbLayout("letters")}>ABC</button>
+                  <button type="button" className="ios-key" style={keyW(4)} onMouseDown={(e) => e.preventDefault()} onClick={onSpace}>空格</button>
+                  <button type="button" className="ios-key return" style={keyW(1.5)} onMouseDown={(e) => e.preventDefault()} onClick={onSend}>换行</button>
+                </div>
+              </>
             )}
+            <div className="ios-home-indicator" />
           </div>
         );
       }
@@ -546,114 +508,80 @@
         };
 
         return (
-          <div className="max-w-md mx-auto min-h-screen flex flex-col">
-            {/* 顶栏 */}
-            <header className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-              <div>
-                <h1 className="text-lg font-semibold">AI 智能输入法</h1>
-                <p className="text-xs text-gray-500">原型演示 · Steam 场景</p>
-              </div>
-              <SmartBadge on={smartMode} />
-            </header>
+          <div className="iphone-shell">
+            <div className="iphone-notch" />
+            <div className="ios-status-bar">
+              <span>9:41</span>
+              <span style={{ fontSize: 12 }}>Steam 聊天</span>
+              <span>100%</span>
+            </div>
 
-            {/* Steam 聊天区 */}
-            <section className="flex-1 steam-panel flex flex-col min-h-0">
-              <div className="px-4 py-2 border-b border-white/5 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded bg-[#66c0f4]/20 flex items-center justify-center text-sm">🎮</div>
-                  <div>
-                    <div className="text-sm font-medium">Steam · 好友聊天</div>
-                    <div className="text-xs text-gray-500">
-                      {partnerLang === "en" ? "Player_One (英语)" : "田中さん (日语)"}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-1 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => switchLang("en")}
-                    className={`px-2 py-1 rounded ${partnerLang === "en" ? "bg-[#66c0f4]/30 text-[#66c0f4]" : "text-gray-500"}`}
-                  >
-                    EN
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => switchLang("ja")}
-                    className={`px-2 py-1 rounded ${partnerLang === "ja" ? "bg-[#66c0f4]/30 text-[#66c0f4]" : "text-gray-500"}`}
-                  >
-                    JP
-                  </button>
+            <div className="ios-nav-bar">
+              <div className="ios-nav-title">
+                {partnerLang === "en" ? "Player_One" : "田中さん"}
+              </div>
+              <div className="ios-nav-sub">
+                {partnerLang === "en" ? "英语 · AI 智能翻译" : "日语 · AI 智能翻译"}
+              </div>
+              <div style={{ marginTop: 8, display: "flex", justifyContent: "center", gap: 6 }}>
+                <div className="ios-seg">
+                  <button type="button" className={partnerLang === "en" ? "active" : ""} onClick={() => switchLang("en")}>EN</button>
+                  <button type="button" className={partnerLang === "ja" ? "active" : ""} onClick={() => switchLang("ja")}>JP</button>
                 </div>
               </div>
+            </div>
 
-              <div className="flex-1 overflow-y-auto px-3 py-4">
-                {messages.map((msg) => (
-                  <ChatBubble key={msg.id} msg={msg} smartMode={smartMode} />
+            <div className="ios-messages">
+              {messages.map((msg) => (
+                <ChatBubble key={msg.id} msg={msg} smartMode={smartMode} />
+              ))}
+            </div>
+
+            <div className="ios-composer">
+              <div className="ios-quick-chips">
+                {QUICK_PHRASES.map((p) => (
+                  <button key={p} type="button" className="ios-chip" onClick={() => applyPhrase(p)}>
+                    {p.length > 10 ? p.slice(0, 10) + "…" : p}
+                  </button>
                 ))}
               </div>
-
-              {/* 快捷短语 */}
-              <div className="px-3 py-2 border-t border-white/5">
-                <div className="text-xs text-gray-500 mb-1.5">快捷回复（点选填入）</div>
-                <div className="flex gap-1.5 overflow-x-auto pb-1">
-                  {QUICK_PHRASES.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => applyPhrase(p)}
-                      className="shrink-0 text-xs px-2.5 py-1 rounded-full bg-white/5 border border-white/10 hover:bg-white/10"
-                    >
-                      {p.length > 12 ? p.slice(0, 12) + "…" : p}
-                    </button>
-                  ))}
-                </div>
+              <div className="ios-composer-row">
+                <button type="button" className="ios-composer-plus">+</button>
+                {inputMode === "builtin" ? (
+                  <IosImeField
+                    inputText={inputText}
+                    composing={composing}
+                    focused={imeFocused}
+                    onFocus={() => setImeFocused(true)}
+                    placeholder="iMessage"
+                  />
+                ) : (
+                  <textarea
+                    ref={inputRef}
+                    rows={1}
+                    defaultValue=""
+                    onInput={syncInput}
+                    onKeyDown={handleTextareaKeyDown}
+                    placeholder="信息"
+                    style={{
+                      flex: 1, minHeight: 36, background: "#fff", border: "0.5px solid rgba(60,60,67,0.15)",
+                      borderRadius: 18, padding: "8px 14px", fontSize: 17, resize: "none", outline: "none", fontFamily: "inherit",
+                    }}
+                  />
+                )}
               </div>
-
-              {/* 输入框 */}
-              <div className="px-3 py-2 border-t border-white/10">
-                <div className="flex items-start gap-2 bg-[#1e2328] rounded-xl px-3 py-2 ring-1 ring-white/5">
-                  {inputMode === "builtin" ? (
-                    <IosImeField
-                      inputText={inputText}
-                      composing={composing}
-                      focused={imeFocused}
-                      onFocus={() => setImeFocused(true)}
-                      placeholder="打拼音，如 nihao / womenyiqiwan → 选词发送"
-                    />
-                  ) : (
-                    <textarea
-                      ref={inputRef}
-                      rows={2}
-                      defaultValue=""
-                      onInput={syncInput}
-                      onKeyDown={handleTextareaKeyDown}
-                      placeholder="系统输入法模式：用微软拼音/搜狗等直接打字"
-                      className="flex-1 bg-transparent text-[16px] outline-none placeholder:text-gray-600 text-white resize-none leading-relaxed"
-                    />
-                  )}
-                  {smartMode && <SmartBadge on />}
-                </div>
-                <p className="text-[11px] text-gray-600 mt-1 px-1">
-                  iOS 拼音：连续输入整句拼音 · 空格选词 · 1-9 切换候选 · 123 标点
-                </p>
-              </div>
-
-              {/* 智能模式翻译预览 */}
+              {smartMode && (
+                <div className="ios-smart-pill">● AI 智能模式已开启</div>
+              )}
               {smartMode && inputText.trim() && (
-                <div className="preview-bar px-4 py-2.5">
-                  <div className="text-xs text-green-400/80 mb-1 flex items-center gap-1">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2h8v2h-2.15c-.63 2.15-1.66 4.16-3.05 5.88l2.7 2.7-1.42 1.49z" />
-                    </svg>
-                    发送预览（{partnerLang === "en" ? "英语" : "日语"} + 中文对照）
-                  </div>
-                  <div className="text-[15px] text-white font-medium">{previewTranslation}</div>
-                  <div className="text-sm text-gray-500 mt-0.5">{inputText}</div>
+                <div className="ios-preview">
+                  <div className="ios-preview-label">发送预览 · {partnerLang === "en" ? "英语" : "日语"}</div>
+                  <div className="ios-preview-en">{previewTranslation}</div>
+                  <div className="ios-preview-zh">{inputText}</div>
                 </div>
               )}
-            </section>
+            </div>
 
-            {/* 键盘 */}
             <Keyboard
               smartMode={smartMode}
               onToggleSmart={() => setSmartMode((s) => !s)}
@@ -665,16 +593,8 @@
               onSpace={handleSpace}
               onBackspace={handleBackspace}
               onSelectCandidate={selectCandidate}
-              candidates={candidates}
               onSend={handleSend}
             />
-
-            {/* 说明 */}
-            <footer className="px-4 py-2 text-center text-[11px] text-gray-600 bg-[#0a0e12]">
-              {smartMode
-                ? "智能模式：对方消息自动附中文 · 你输入中文自动译成外语并双语发送"
-                : "普通模式：标准中文输入，无自动翻译"}
-            </footer>
           </div>
         );
       }

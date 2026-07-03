@@ -210,7 +210,13 @@
     if (PHRASES[py]) PHRASES[py].forEach((t, i) => push(t, 100 - i));
 
     Object.keys(PHRASES)
-      .filter((k) => k.startsWith(py) && k !== py)
+      .filter((k) => {
+        if (!k.startsWith(py) || k === py) return false;
+        const extra = k.length - py.length;
+        if (py.length < 3) return extra <= 1;
+        if (py.length < 5) return extra <= 4;
+        return extra <= 8;
+      })
       .sort((a, b) => b.length - a.length)
       .slice(0, 10)
       .forEach((k, ki) => PHRASES[k].forEach((t, i) => push(t, 85 - ki * 3 - i)));

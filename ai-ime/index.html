@@ -167,22 +167,21 @@
       // 演示用翻译词典（正式版接 AI API）
       const TRANSLATE = {
         toZh: {
-          "Hey! Nice game earlier, want to team up again?": "嘿！刚才那局打得不错，要不要再来一局？",
-          "GG! You're really good at this.": "打得好！你真的很厉害。",
+          "Hey! Are you free to chat later?": "嘿！你待会有空聊会儿吗？",
+          "Thanks for your help yesterday!": "谢谢你昨天的帮助！",
           "Where are you from?": "你是哪里人？",
-          "Thanks for the help!": "谢谢你的帮助！",
-          "Let's go!": "冲啊！",
-          "すみません、一緒にプレイしませんか？": "不好意思，要不要一起玩？",
-          "上手ですね！また一緒にやりましょう。": "好厉害！下次再一起玩吧。",
+          "Hello!": "你好！",
+          "すみません、一緒に話しませんか？": "不好意思，方便聊几句吗？",
+          "お元気ですか？": "你好吗？",
           "こんにちは！": "你好！",
         },
         fromZh: {
-          "你好！我也玩得很开心。": { en: "Hi! I had a great time too.", ja: "こんにちは！私も楽しかったです。" },
-          "好的，再来一局吧。": { en: "Sure, let's play another round.", ja: "はい、もう一局やりましょう。" },
-          "谢谢，你也很厉害。": { en: "Thanks, you're awesome too.", ja: "ありがとう、あなたもすごいです。" },
+          "你好！很高兴认识你。": { en: "Hi! Nice to meet you.", ja: "こんにちは！はじめまして。" },
+          "好的，没问题。": { en: "Sure, no problem.", ja: "はい、大丈夫です。" },
+          "谢谢你的消息。": { en: "Thanks for your message.", ja: "メッセージありがとうございます。" },
           "我是中国人，英语不太好。": { en: "I'm from China, my English isn't great.", ja: "中国人です、日本語はあまり得意ではありません。" },
-          "没问题，一起加油！": { en: "No problem, let's do this!", ja: "大丈夫、一緒に頑張りましょう！" },
-          "可以，加我吧。": { en: "Sure, add me.", ja: "いいですよ、追加してください。" },
+          "明天见！": { en: "See you tomorrow!", ja: "また明日！" },
+          "可以，我们保持联系。": { en: "Sure, let's keep in touch.", ja: "はい、連絡を取り合いましょう。" },
         },
       };
 
@@ -201,23 +200,24 @@
       }
 
       const PUNCT_KEYS = ["，", "。", "？", "！", "、", "…", "~", "：", "；", "（", "）", "「", "」"];
+      const INITIAL_MESSAGES = {
         en: [
-          { id: 1, from: "them", text: "Hey! Nice game earlier, want to team up again?", lang: "en" },
-          { id: 2, from: "them", text: "GG! You're really good at this.", lang: "en" },
+          { id: 1, from: "them", text: "Hey! Are you free to chat later?", lang: "en" },
+          { id: 2, from: "them", text: "Thanks for your help yesterday!", lang: "en" },
         ],
         ja: [
           { id: 1, from: "them", text: "こんにちは！", lang: "ja" },
-          { id: 2, from: "them", text: "上手ですね！また一緒にやりましょう。", lang: "ja" },
+          { id: 2, from: "them", text: "お元気ですか？", lang: "ja" },
         ],
       };
 
       const QUICK_PHRASES = [
-        "你好！我也玩得很开心。",
-        "好的，再来一局吧。",
-        "谢谢，你也很厉害。",
+        "你好！很高兴认识你。",
+        "好的，没问题。",
+        "谢谢你的消息。",
         "我是中国人，英语不太好。",
-        "没问题，一起加油！",
-        "可以，加我吧。",
+        "明天见！",
+        "可以，我们保持联系。",
       ];
 
       function ChatBubble({ msg, smartMode }) {

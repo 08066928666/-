@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+from typing import Callable
 
 import customtkinter as ctk
 
@@ -169,8 +170,12 @@ class InputBar(ctk.CTkToplevel):
         self.deiconify()
         self.lift()
         set_window_topmost(self)
-        self._entry.focus_set()
-        self._entry.icursor("end")
+
+        def _focus() -> None:
+            self._entry.focus_set()
+            self._entry.icursor("end")
+
+        self.after(50, _focus)
 
     def hide(self) -> None:
         self.withdraw()

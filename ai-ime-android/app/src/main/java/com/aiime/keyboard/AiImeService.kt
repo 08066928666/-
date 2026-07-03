@@ -5,10 +5,11 @@ import android.content.Context
 import android.inputmethodservice.InputMethodService
 import android.inputmethodservice.Keyboard
 import android.inputmethodservice.KeyboardView
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
-import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -16,6 +17,7 @@ import com.aiime.keyboard.R
 
 /**
  * 轻量输入法（演示）。流畅度远不如语燕 Rime 版，见 ai-ime-mobile/ROADMAP.md
+ * 功能：复制歌词条 + 发送翻译
  */
 class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
@@ -28,23 +30,41 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
     private var symbolMode = false
 
     private var candidateRow: LinearLayout? = null
-    private var previewBar: TextView? = null
+    private var lyricBar: LinearLayout? = null
+    private var lyricOriginal: TextView? = null
+    private var lyricTranslated: TextView? = null
+    private var sendPreviewBar: LinearLayout? = null
+    private var sendPreviewLine1: TextView? = null
+    private var sendPreviewLine2: TextView? = null
     private var modeLabel: TextView? = null
     private var lastCandidates: List<String> = emptyList()
     private var inAssociateMode = false
+    private var lastClipboard = ""
 
     private val candidateViews = ArrayList<TextView>(9)
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var clipboardManager: ClipboardManager? = null
+
+    private val clipListener = ClipboardManager.OnPrimaryClipChangedListener {
+        mainHandler.post { onClipboardChanged() }
+    }
 
     override fun onCreate() {
         super.onCreate()
         engine = PinyinEngine(this)
+        clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     }
 
     override fun onCreateInputView(): View {
         val root = layoutInflater.inflate(R.layout.keyboard_view, null)
         keyboardView = root.findViewById(R.id.keyboard)
         candidateRow = root.findViewById(R.id.candidate_row)
-        previewBar = root.findViewById(R.id.preview_bar)
+        lyricBar = root.findViewById(R.id.lyric_bar)
+        lyricOriginal = root.findViewById(R.id.lyric_original)
+        lyricTranslated = root.findViewById(R.id.lyric_translated)
+        sendPreviewBar = root.findViewById(R.id.send_preview_bar)
+        sendPreviewLine1 = root.findViewById(R.id.send_preview_line1)
+        sendPreviewLine2 = root.findViewById(R.id.send_preview_line2)
         modeLabel = root.findViewById(R.id.mode_label)
 
         keyboardView?.apply {
@@ -56,7 +76,7 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
         root.findViewById<Button>(R.id.btn_smart).setOnClickListener {
             smartMode = !smartMode
             updateModeLabel()
-            updatePreview()
+            updateSendPreview()
         }
         root.findViewById<Button>(R.id.btn_lang).setOnClickListener {
             targetLang = when (targetLang) {
@@ -65,13 +85,30 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
                 else -> "en"
             }
             updateModeLabel()
-            updatePreview()
+            updateSendPreview()
         }
-        root.findViewById<Button>(R.id.btn_clip).setOnClickListener { translateClipboard() }
+        root.findViewById<Button>(R.id.btn_clip).setOnClickListener { translateClipboard(insert = true) }
 
         initCandidatePool()
         updateModeLabel()
         return root
+    }
+
+    override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
+        super.onStartInput(attribute, restarting)
+        composing.clear()
+        associateContext = ""
+        inAssociateMode = false
+        clearComposingInEditor()
+        refreshCandidates()
+        updateSendPreview()
+        clipboardManager?.addPrimaryClipChangedListener(clipListener)
+        onClipboardChanged()
+    }
+
+    override fun onFinishInput() {
+        clipboardManager?.removePrimaryClipChangedListener(clipListener)
+        super.onFinishInput()
     }
 
     private fun initCandidatePool() {
@@ -94,14 +131,41 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
         commitCandidate(lastCandidates[index])
     }
 
-    override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
-        super.onStartInput(attribute, restarting)
-        composing.clear()
-        associateContext = ""
-        inAssociateMode = false
-        clearComposingInEditor()
-        refreshCandidates()
-        updatePreview()
+    private fun onClipboardChanged() {
+        val clip = clipboardManager?.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()?.trim()
+        if (clip.isNullOrEmpty() || clip == lastClipboard) return
+        lastClipboard = clip
+        showLyricBar(clip, insert = false)
+    }
+
+    private fun showLyricBar(text: String, insert: Boolean) {
+        val lang = Translator.detectLanguage(text)
+        if (lang == "zh-cn") {
+            lyricBar?.visibility = View.GONE
+            return
+        }
+        val r = Translator.translateIncoming(text)
+        lyricOriginal?.text = r.original
+        lyricTranslated?.text = r.translated
+        lyricBar?.visibility = View.VISIBLE
+        lyricBar?.alpha = 1f
+        mainHandler.postDelayed({
+            lyricBar?.animate()?.alpha(0.45f)?.setDuration(300)?.start()
+        }, 8000)
+        if (insert) {
+            commitText("${r.translated}\n（原文：$text）")
+            Toast.makeText(this, "已插入中文对照", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun translateClipboard(insert: Boolean = true) {
+        val clip = clipboardManager?.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()?.trim()
+        if (clip.isNullOrEmpty()) {
+            Toast.makeText(this, "剪贴板为空", Toast.LENGTH_SHORT).show()
+            return
+        }
+        lastClipboard = clip
+        showLyricBar(clip, insert)
     }
 
     override fun onKey(primaryCode: Int, keyCodes: IntArray?) {
@@ -124,7 +188,7 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
                         composing.append(ch.lowercaseChar())
                         syncComposingToEditor()
                         refreshCandidates()
-                        updatePreview()
+                        updateSendPreview()
                     }
                 }
             }
@@ -154,7 +218,7 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
             composing.deleteCharAt(composing.length - 1)
             syncComposingToEditor()
             refreshCandidates()
-            updatePreview()
+            updateSendPreview()
         } else if (inAssociateMode) {
             exitAssociateMode()
             refreshCandidates()
@@ -162,6 +226,7 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
             currentInputConnection?.deleteSurroundingText(1, 0)
             updateAssociateContextFromEditor()
             refreshCandidates()
+            updateSendPreview()
         }
     }
 
@@ -186,7 +251,6 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
                 clearComposingInEditor()
                 refreshCandidates()
             }
-            return
         }
         if (smartMode) {
             val ic = currentInputConnection ?: return
@@ -200,6 +264,7 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
         currentInputConnection?.performEditorAction(EditorInfo.IME_ACTION_SEND)
         exitAssociateMode()
         refreshCandidates()
+        sendPreviewBar?.visibility = View.GONE
         updateModeLabel()
     }
 
@@ -225,7 +290,7 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
             enterAssociateModeIfNeeded()
         }
         refreshCandidates()
-        updatePreview()
+        updateSendPreview()
     }
 
     private fun commitAssociate(tail: String) {
@@ -233,7 +298,7 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
         associateContext += tail
         enterAssociateModeIfNeeded()
         refreshCandidates()
-        updatePreview()
+        updateSendPreview()
     }
 
     private fun updateAssociateContextFromEditor() {
@@ -268,19 +333,34 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
         updateModeLabel()
     }
 
-    private fun updatePreview() {
-        val bar = previewBar ?: return
+    private fun updateSendPreview() {
         if (!smartMode) {
-            bar.text = "智能翻译：关（发送时翻译）"
+            sendPreviewBar?.visibility = View.GONE
             return
         }
-        val draft = currentInputConnection?.getTextBeforeCursor(500, 0)?.toString().orEmpty()
-        if (draft.isBlank() && composing.isEmpty()) {
-            bar.text = "正式版请用语燕 Rime · ai-ime-yuyan/"
+        val draft = currentDraftChinese()
+        if (draft.isBlank()) {
+            sendPreviewBar?.visibility = View.GONE
             return
         }
         val r = Translator.translateOutgoing(draft, targetLang)
-        bar.text = "发送预览：${r.translated}"
+        sendPreviewBar?.visibility = View.VISIBLE
+        sendPreviewLine1?.text = "将发送（${langLabel()}）：${r.translated}"
+        sendPreviewLine2?.text = "（$draft）"
+    }
+
+    private fun currentDraftChinese(): String {
+        val before = currentInputConnection?.getTextBeforeCursor(500, 0)?.toString().orEmpty()
+        val line = before.substringAfterLast('\n').trim()
+        if (line.isNotEmpty() && line.any { it in '\u4e00'..'\u9fff' }) return line
+        if (composing.isNotEmpty()) return lastCandidates.firstOrNull() ?: composing.toString()
+        return ""
+    }
+
+    private fun langLabel(): String = when (targetLang) {
+        "ja" -> "日语"
+        "ko" -> "韩语"
+        else -> "英语"
     }
 
     private fun updateModeLabel() {
@@ -290,18 +370,6 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
             else -> if (smartMode) "智能 ON · $targetLang" else "拼音"
         }
         modeLabel?.text = mode
-    }
-
-    private fun translateClipboard() {
-        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = cm.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()?.trim()
-        if (clip.isNullOrEmpty()) {
-            Toast.makeText(this, "剪贴板为空", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val r = Translator.translateIncoming(clip)
-        commitText("${r.translated}\n（原文：$clip）")
-        Toast.makeText(this, "已插入中文对照", Toast.LENGTH_SHORT).show()
     }
 
     override fun onPress(primaryCode: Int) {}

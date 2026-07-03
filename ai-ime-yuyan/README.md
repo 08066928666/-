@@ -36,7 +36,7 @@ cd vendor/YuyanIme
 
 - **日常输入**：完全走语燕 / Rime 拼音，与系统输入法一样连贯
 - **发消息**：输入中文后按发送/回车 → 译成目标语 + 中文对照（可配置）
-- **收消息**：复制外文 → 语燕自带剪贴板栏，可扩展「译剪贴板」（见 `SmartTranslate.kt`）
+- **收消息**：复制外文 → **歌词条**自动显示（`LyricSubtitleBar.kt` + 剪贴板监听）
 
 核心代码：`addon/src/main/java/com/aiime/translate/`
 

@@ -209,8 +209,8 @@ iOS 限制：键盘**读不到**别的 App 聊天框里的字，所以「收」�
 | 翻译逻辑演示 | ✅ `Translator` / `SmartTranslate` |
 | Android 语燕加装脚本 | ✅ `ai-ime-yuyan/` |
 | iOS 零开发指南 | ✅ `IPHONE_无需开发.md` |
-| 歌词悬浮 UI | ⏳ 待开发（需助手 App） |
-| 复制即译监听 | ⏳ 待开发 |
+| 歌词悬浮 UI | ✅ 轻量版 + 语燕 addon `LyricSubtitleBar` |
+| 复制即译监听 | ✅ iOS 宿主 App / 键盘、Android IME + 宿主 |
 | 上架 TestFlight | ⏳ 需 Apple 开发者账号 |
 
 你确认 MVP 先做 **「复制 → 歌词字幕」+「发送翻译」** 后，即可按此文档找开发或立项。

@@ -15,11 +15,11 @@ struct ContentView: View {
             List {
                 Section("安装键盘") {
                     Text("1. 打开「设置 → 通用 → 键盘 → 键盘」")
-                    Text("2. 添加新键盘 → 选择「AI 游戏输入法」")
-                    Text("3. 在 Steam / 游戏 App 中点地球图标切换键盘")
+                    Text("2. 添加新键盘 → 选择「AI 翻译输入法」")
+                    Text("3. 在任意 App 中点地球图标切换键盘")
                 }
                 Section("功能") {
-                    Text("拼音输入 + 词组候选")
+                    Text("普通拼音输入 + 词组候选")
                     Text("智能模式：中文 → 外语 + 中文对照")
                     Text("收消息：复制外文后可在宿主 App 查看对照（扩展权限限制）")
                 }
@@ -29,7 +29,7 @@ struct ContentView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("AI 游戏输入法")
+            .navigationTitle("AI 翻译输入法")
         }
     }
 }

@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleDisplayName</key>
-    <string>AI 游戏输入法</string>
+    <string>AI 翻译输入法</string>
     <key>NSExtension</key>
     <dict>
         <key>NSExtensionAttributes</key>

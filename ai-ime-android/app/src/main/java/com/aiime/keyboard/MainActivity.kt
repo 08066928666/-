@@ -26,8 +26,8 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<TextView>(R.id.hint).text =
             "1. 点击「打开输入法设置」\n" +
-            "2. 启用「AI 游戏输入法」\n" +
-            "3. 在 Steam / 微信等 App 里切换到本键盘\n" +
+            "2. 启用「AI 翻译输入法」\n" +
+            "3. 在微信、邮件等任意 App 中切换到本键盘\n" +
             "4. 智能模式：中文输入 → 自动译成外语并附带中文"
     }
 }

@@ -1,8 +1,8 @@
 """
-AI 智能输入法 — Windows 版
+AI 翻译输入法 — Windows 版
 
-Steam / Discord 等全局场景：
-- 复制对方外语 → 自动弹出中文对照
+任意 Windows 应用场景：
+- 复制外文 → 自动弹出中文对照
 - Ctrl+Shift+Space 呼出输入栏 → 输入中文 → 双语发送
 """
 

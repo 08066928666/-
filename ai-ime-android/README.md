@@ -1,6 +1,6 @@
 # Android 输入法
 
-系统级 IME，基于 `InputMethodService`。
+系统级 IME，基于 `InputMethodService`。普通拼音输入 + 内置智能翻译。
 
 ## 快速开始
 

@@ -32,7 +32,7 @@ targets:
     info:
       path: AiImeKeyboard/Info.plist
       properties:
-        CFBundleDisplayName: AI 游戏输入法
+        CFBundleDisplayName: AI 翻译输入法
 YAML
 
 if command -v xcodegen >/dev/null 2>&1; then

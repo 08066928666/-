@@ -1,12 +1,13 @@
-# AI 游戏输入法 — 移动端（iOS / Android）
+# AI 翻译输入法 — 移动端（iOS / Android）
 
-可安装到 **iOS** 和 **Android 系统** 的原生输入法，专为游戏聊天场景设计：
+可安装到 **iOS** 和 **Android 系统** 的**普通中文输入法**，内置智能翻译：
 
-- **发消息**：用拼音打中文 → 自动译成英语/日语等，并附带中文对照
-- **收消息**：复制外文到剪贴板 → 一键插入中文对照（Android 键盘内按钮；iOS 受系统权限限制）
-- **内置词库**：约 4.1 万拼音键，含游戏常用语
+- **日常输入**：完整拼音、词组与整句候选（对标系统输入法体验）
+- **发消息**：中文输入 → 自动译成目标语言，可附带中文对照
+- **收消息**：复制外文 → 一键插入中文对照（Android 键盘内；iOS 受系统权限限制）
+- **内置词库**：约 4.1 万拼音键，覆盖常用聊天与日常用语
 
-> 网页版 `ai-ime/` 仅为开发参考，**不是**最终产品。请使用本目录下的原生工程打包安装。
+> 网页版 `ai-ime/` 仅为开发参考。请使用本目录下的原生工程打包安装。
 
 ## 目录结构
 
@@ -30,7 +31,7 @@ ai-ime-ios/             # iOS 键盘扩展（需 Mac + Xcode）
 ```bash
 cd ai-ime-android
 # 用 Android Studio 打开本目录，或：
-./gradlew assembleDebug   # 需 Gradle Wrapper，见下方说明
+./gradlew assembleDebug
 ```
 
 生成的 APK：`app/build/outputs/apk/debug/app-debug.apk`
@@ -38,9 +39,9 @@ cd ai-ime-android
 ### 安装到手机
 
 1. 将 APK 传到手机并安装（需允许「未知来源」）
-2. 打开 **AI 游戏输入法** App →「打开输入法设置」
-3. 启用 **AI 游戏输入法**
-4. 在 Steam、微信等 App 里长按空格或点键盘图标，切换到本输入法
+2. 打开 **AI 翻译输入法** App →「打开输入法设置」
+3. 启用 **AI 翻译输入法**
+4. 在微信、Telegram、邮件等任意 App 中切换到本键盘
 
 ### 使用
 
@@ -61,7 +62,7 @@ iOS 键盘必须以 **Keyboard Extension** 形式安装，需要 Mac 与 Apple �
 ```bash
 cd ai-ime-ios
 chmod +x scripts/setup-xcode.sh
-./scripts/setup-xcode.sh    # 生成 AiIme.xcodeproj（需 xcodegen）
+./scripts/setup-xcode.sh
 open AiIme.xcodeproj
 ```
 
@@ -69,7 +70,7 @@ open AiIme.xcodeproj
 
 1. 将 `Shared/dict.json` 拖入 **AiIme** 与 **AiImeKeyboard** 两个 Target（勾选 Copy + 两个 Target）
 2. 选择你的 Team，连接 iPhone，Run 主 App
-3. iPhone：**设置 → 通用 → 键盘 → 键盘 → 添加新键盘 → AI 游戏输入法**
+3. iPhone：**设置 → 通用 → 键盘 → 键盘 → 添加新键盘 → AI 翻译输入法**
 4. 建议开启「允许完全访问」以便后续接入网络翻译 API
 
 ### iOS 限制说明
@@ -97,4 +98,4 @@ cp ai-ime-mobile/shared/dict.json ai-ime-ios/Shared/dict.json
 
 ## 与 Windows 版关系
 
-`ai-ime-windows/` 为 PC 游戏场景（全局热键 + 悬浮栏），逻辑与本移动端一致，可共用翻译服务配置。
+`ai-ime-windows/` 为桌面端辅助工具（全局热键 + 悬浮栏），适合无法在 PC 上安装系统输入法的场景，逻辑与移动端一致。

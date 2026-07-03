@@ -146,6 +146,8 @@ for (const [k, v] of Object.entries(BASIC_CHARS)) {
   charOut[k] = v;
   if (!compact[k]) compact[k] = v.split("").map((c, i) => [c, 5200 - i]);
 }
+
+const header = `/** 自动生成 · ${Object.keys(compact).length} 拼音键 · 勿手改 */\n`;
 const body = `window.IME_DICT=${JSON.stringify(compact)};window.IME_CHARS=${JSON.stringify(charOut)};`;
 fs.writeFileSync(out, header + body);
-console.log("Wrote", out, "keys:", Object.keys(compact).length, "chars:", Object.keys(charObj).length);
+console.log("Wrote", out, "keys:", Object.keys(compact).length, "chars:", Object.keys(charOut).length);

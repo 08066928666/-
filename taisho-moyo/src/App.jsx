@@ -8,7 +8,7 @@ import {
 } from "./data/knowledgeBase.js";
 import { analyzeIssue, buildReportSummary } from "./utils/analyzeIssue.js";
 import { loadSession, saveSession, clearSession, addFinding, removeFinding } from "./utils/storage.js";
-import "./tenant.css";
+import "./app.css";
 
 const STEPS = ["home", "setup", "inspect", "result", "report", "services"];
 
@@ -488,7 +488,7 @@ function ServicesScreen({ onBack }) {
 }
 
 /* ─── Main App ─── */
-export default function TenantApp() {
+export default function App() {
   const [step, setStep] = useState("home");
   const [session, setSession] = useState(loadSession);
   const [lastResult, setLastResult] = useState(null);

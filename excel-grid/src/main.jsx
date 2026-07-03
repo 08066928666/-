@@ -1,10 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import TenantApp from "./tenant/TenantApp.jsx";
+import App from "./App.jsx";
 import "./index.css";
+import "react-data-grid/lib/styles.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <TenantApp />
+    <App />
   </React.StrictMode>
 );

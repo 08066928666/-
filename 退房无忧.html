@@ -17,10 +17,18 @@
       color: #0f766e;
     }
     a { color: #0d9488; font-weight: bold; }
+    p { text-align: center; line-height: 1.8; }
+    code { background: #ccfbf1; padding: 2px 6px; border-radius: 4px; }
   </style>
 </head>
 <body>
-  <p>正在打开 <a href="http://localhost:5173/">退房无忧</a>…</p>
+  <div>
+    <p>正在打开 <a href="http://localhost:5173/">退房无忧</a>…</p>
+    <p style="font-size: 14px; color: #64748b;">
+      若未自动跳转，请先在终端运行：<br />
+      <code>cd taisho-moyo && npm start</code>
+    </p>
+  </div>
   <script>location.replace("http://localhost:5173/");</script>
 </body>
 </html>

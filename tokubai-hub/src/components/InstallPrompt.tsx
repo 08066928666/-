@@ -48,7 +48,7 @@ export default function InstallPrompt() {
 
   if (showIOSHint) {
     return (
-      <div className="fixed bottom-20 left-3 right-3 z-40 rounded-2xl border border-orange-200 bg-white p-4 shadow-lg md:hidden safe-bottom-offset">
+      <div className="fixed bottom-20 left-3 right-3 z-40 rounded-2xl border border-brand-200 bg-white p-4 shadow-lg md:hidden safe-bottom-offset">
         <p className="mb-1 text-sm font-bold text-gray-900">📱 アプリのように使う</p>
         <p className="text-xs text-gray-600">
           Safari の共有ボタン →「ホーム画面に追加」でアプリ化できます
@@ -63,7 +63,7 @@ export default function InstallPrompt() {
   if (!deferred) return null;
 
   return (
-    <div className="fixed bottom-20 left-3 right-3 z-40 flex items-center gap-3 rounded-2xl border border-orange-200 bg-white p-4 shadow-lg md:hidden safe-bottom-offset">
+    <div className="fixed bottom-20 left-3 right-3 z-40 flex items-center gap-3 rounded-2xl border border-brand-200 bg-white p-4 shadow-lg md:hidden safe-bottom-offset">
       <div className="flex-1">
         <p className="text-sm font-bold text-gray-900">Tokubai Hub をインストール</p>
         <p className="text-xs text-gray-600">ホーム画面からすぐアクセス</p>

@@ -3,26 +3,26 @@
 @tailwind utilities;
 
 :root {
-  --background: #fffbf7;
-  --foreground: #1a1a1a;
-  --nav-bottom-height: 4.5rem;
+  --background: #fafaf9;
+  --foreground: #1c1917;
+  --nav-bottom-height: 4.25rem;
+  --header-height: 3.75rem;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Mobile: space for bottom tab bar */
 .page-content {
-  min-height: calc(100vh - 4rem);
-  padding-bottom: calc(var(--nav-bottom-height) + env(safe-area-inset-bottom, 0px));
+  min-height: calc(100vh - var(--header-height));
+  padding-bottom: calc(var(--nav-bottom-height) + env(safe-area-inset-bottom, 0px) + 0.5rem);
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .page-content {
     padding-bottom: 2rem;
   }
@@ -37,13 +37,40 @@ body {
 }
 
 .safe-bottom-offset {
-  bottom: calc(var(--nav-bottom-height) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--nav-bottom-height) + env(safe-area-inset-bottom, 0px) + 0.5rem);
 }
 
-/* Desktop: wider layouts, hover states */
-@media (min-width: 1024px) {
-  .page-content {
-    min-height: calc(100vh - 5rem);
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-2xl bg-brand-500 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brand-600 active:scale-[0.98] disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-2xl border border-stone-200 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 active:scale-[0.98];
+  }
+
+  .input-field {
+    @apply w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100;
+  }
+
+  .card-surface {
+    @apply rounded-3xl border border-stone-100 bg-white shadow-card;
+  }
+
+  .filter-pill {
+    @apply shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition;
+  }
+
+  .filter-pill-active {
+    @apply bg-brand-500 text-white shadow-sm;
+  }
+
+  .filter-pill-inactive {
+    @apply bg-white text-stone-600 ring-1 ring-stone-200 hover:bg-stone-50;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-2xl bg-stone-200/80;
   }
 }
 
@@ -55,5 +82,13 @@ body {
   .touch-target {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }

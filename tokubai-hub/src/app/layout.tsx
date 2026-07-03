@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import InstallPrompt from "@/components/InstallPrompt";
 import { CartProvider } from "@/components/CartProvider";
+import { ToastProvider } from "@/components/ToastProvider";
 import CartButton from "@/components/CartButton";
 
 export const metadata: Metadata = {
@@ -15,16 +16,11 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Tokubai Hub",
   },
-  formatDetection: {
-    telephone: false,
-  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   themeColor: "#f97316",
   viewportFit: "cover",
 };
@@ -38,16 +34,17 @@ export default function RootLayout({
     <html lang="ja">
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
-        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-screen antialiased">
-        <CartProvider>
-          <Navbar />
-          <main className="page-content">{children}</main>
-          <CartButton />
-          <MobileBottomNav />
-          <InstallPrompt />
-        </CartProvider>
+        <ToastProvider>
+          <CartProvider>
+            <Navbar />
+            <main className="page-content">{children}</main>
+            <CartButton />
+            <MobileBottomNav />
+            <InstallPrompt />
+          </CartProvider>
+        </ToastProvider>
       </body>
     </html>
   );

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Tokubai Hub - デモ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; background: #fffbf7; color: #1a1a1a; padding-bottom: 80px; }
+    .header { background: linear-gradient(135deg, #f97316, #fbbf24); color: #fff; padding: 24px 16px; text-align: center; }
+    .header h1 { font-size: 1.5rem; margin-bottom: 4px; }
+    .header p { font-size: 0.85rem; opacity: 0.9; }
+    .badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; margin-bottom: 12px; }
+    .tabs { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; }
+    .tab { flex-shrink: 0; padding: 8px 14px; border-radius: 20px; border: none; background: #f3f4f6; font-size: 0.8rem; cursor: pointer; }
+    .tab.active { background: #f97316; color: #fff; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 0 16px 16px; }
+    @media (min-width: 768px) { .grid { grid-template-columns: repeat(4, 1fr); max-width: 1000px; margin: 0 auto; } }
+    .card { background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .card-img { background: linear-gradient(135deg, #fff7ed, #fef3c7); padding: 24px; text-align: center; font-size: 2.5rem; position: relative; }
+    .off { position: absolute; top: 8px; left: 8px; background: #ef4444; color: #fff; font-size: 0.7rem; font-weight: bold; padding: 2px 8px; border-radius: 10px; }
+    .stock { position: absolute; top: 8px; right: 8px; background: #fff; font-size: 0.65rem; padding: 2px 6px; border-radius: 8px; color: #c2410c; }
+    .card-body { padding: 12px; }
+    .chain { font-size: 0.65rem; background: #059669; color: #fff; padding: 1px 6px; border-radius: 4px; }
+    .name { font-weight: bold; font-size: 0.85rem; margin: 6px 0 2px; line-height: 1.3; }
+    .store { font-size: 0.7rem; color: #6b7280; margin-bottom: 8px; }
+    .price { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px; }
+    .now { color: #dc2626; font-weight: bold; font-size: 1.1rem; }
+    .was { color: #9ca3af; text-decoration: line-through; font-size: 0.8rem; }
+    .expiry { font-size: 0.7rem; color: #b45309; margin-bottom: 10px; }
+    .btn { width: 100%; padding: 10px; border: none; border-radius: 12px; background: #f97316; color: #fff; font-weight: bold; font-size: 0.85rem; cursor: pointer; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.5; }
+    .bottom { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #fed7aa; padding: 12px 16px; display: flex; justify-content: space-around; }
+    .nav-item { text-align: center; font-size: 0.65rem; color: #6b7280; cursor: pointer; border: none; background: none; }
+    .nav-item.active { color: #f97316; }
+    .nav-item span { display: block; font-size: 1.3rem; }
+    .fab { position: fixed; bottom: 72px; right: 16px; background: #f97316; color: #fff; border-radius: 50px; padding: 12px 20px; font-weight: bold; box-shadow: 0 4px 12px rgba(249,115,22,0.4); display: none; cursor: pointer; border: none; font-size: 0.9rem; }
+    .fab.show { display: block; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: flex-end; justify-content: center; }
+    .modal.show { display: flex; }
+    .modal-box { background: #fff; border-radius: 20px 20px 0 0; padding: 24px; width: 100%; max-width: 480px; max-height: 80vh; overflow-y: auto; }
+    .modal h2 { font-size: 1.1rem; margin-bottom: 16px; }
+    .cart-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f3f4f6; font-size: 0.9rem; }
+    .code-box { background: #fff7ed; border: 2px dashed #fdba74; border-radius: 16px; padding: 24px; text-align: center; margin: 16px 0; }
+    .code { font-size: 2rem; font-weight: bold; letter-spacing: 6px; color: #ea580c; font-family: monospace; }
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #1f2937; color: #fff; padding: 10px 20px; border-radius: 10px; font-size: 0.85rem; opacity: 0; transition: opacity 0.3s; z-index: 200; }
+    .toast.show { opacity: 1; }
+    .hidden { display: none !important; }
+    .steps { padding: 16px; }
+    .step { display: flex; gap: 12px; background: #fff; padding: 14px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+    .step-num { width: 32px; height: 32px; background: #f97316; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+  <div class="toast" id="toast"></div>
+
+  <div id="view-home">
+    <div class="header">
+      <div class="badge">📱 オフラインデモ · ダブルクリックで開く</div>
+      <h1>🏷️ Tokubai Hub</h1>
+      <p>値下げ商品をリアルタイムで — デモ版</p>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div><strong>商品を探す</strong><br><small style="color:#6b7280">タブ「商品」で値下げ一覧</small></div></div>
+      <div class="step"><div class="step-num">2</div><div><strong>カートに追加</strong><br><small style="color:#6b7280">気になる商品をタップ</small></div></div>
+      <div class="step"><div class="step-num">3</div><div><strong>予約・受取</strong><br><small style="color:#6b7280">カートから予約→受取コード表示</small></div></div>
+      <button class="btn" style="margin-top:12px" onclick="showView('products')">🚀 デモを始める</button>
+    </div>
+  </div>
+
+  <div id="view-products" class="hidden">
+    <div class="header" style="padding:16px"><h1>値下げ商品</h1><p>リアルタイム在庫デモ</p></div>
+    <div class="tabs" id="filters"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div id="view-stores" class="hidden">
+    <div class="header" style="padding:16px"><h1>店舗一覧</h1></div>
+    <div class="steps" id="store-list"></div>
+  </div>
+
+  <button class="fab" id="fab" onclick="openCart()">🛒 <span id="fab-count">0</span></button>
+
+  <div class="modal" id="cart-modal">
+    <div class="modal-box">
+      <h2>🛒 カート</h2>
+      <div id="cart-items"></div>
+      <div id="cart-total" style="font-weight:bold;margin:12px 0"></div>
+      <button class="btn" onclick="checkout()">予約する（店頭受取）</button>
+      <button style="width:100%;margin-top:8px;padding:10px;border:none;background:#f3f4f6;border-radius:12px;cursor:pointer" onclick="closeCart()">閉じる</button>
+    </div>
+  </div>
+
+  <div class="modal" id="success-modal">
+    <div class="modal-box" style="text-align:center">
+      <div style="font-size:3rem">✅</div>
+      <h2 style="margin:12px 0">予約完了！</h2>
+      <p style="color:#6b7280;font-size:0.85rem;margin-bottom:12px">店頭でこのコードを見せてください</p>
+      <div class="code-box"><div class="code" id="pickup-code">ABC123</div></div>
+      <p style="font-size:0.8rem;color:#6b7280">店頭でのお支払いとなります</p>
+      <button class="btn" style="margin-top:16px" onclick="closeSuccess()">商品を見る</button>
+    </div>
+  </div>
+
+  <nav class="bottom" id="nav">
+    <button class="nav-item active" data-view="home" onclick="showView('home')"><span>🏠</span>ホーム</button>
+    <button class="nav-item" data-view="products" onclick="showView('products')"><span>🏷️</span>商品</button>
+    <button class="nav-item" data-view="stores" onclick="showView('stores')"><span>🏪</span>店舗</button>
+    <button class="nav-item" onclick="openCart()"><span>🛒</span>カート</button>
+  </nav>
+
+  <script>
+    const PRODUCTS = [
+      { id:1, name:"のり弁当", emoji:"🍱", chain:"セブン", store:"渋谷道玄坂店", cat:"弁当", orig:498, disc:249, pct:50, stock:3, hrs:2 },
+      { id:2, name:"からあげ弁当", emoji:"🍗", chain:"セブン", store:"渋谷道玄坂店", cat:"弁当", orig:548, disc:329, pct:40, stock:2, hrs:3 },
+      { id:3, name:"サラダチキン", emoji:"🥗", chain:"セブン", store:"渋谷道玄坂店", cat:"おかず", orig:218, disc:109, pct:50, stock:5, hrs:4 },
+      { id:4, name:"たまごサンド", emoji:"🥪", chain:"セブン", store:"渋谷道玄坂店", cat:"パン", orig:198, disc:99, pct:50, stock:4, hrs:1 },
+      { id:5, name:"麻婆豆腐弁当", emoji:"🍱", chain:"ローソン", store:"新宿西口店", cat:"弁当", orig:598, disc:299, pct:50, stock:2, hrs:2 },
+      { id:6, name:"キムチ", emoji:"🌶️", chain:"ローソン", store:"新宿西口店", cat:"調味料", orig:298, disc:149, pct:50, stock:6, hrs:48 },
+      { id:7, name:"幕の内弁当", emoji:"🍱", chain:"ファミマ", store:"池袋東口店", cat:"弁当", orig:598, disc:358, pct:40, stock:2, hrs:2 },
+      { id:8, name:"おにぎり 鮭", emoji:"🍙", chain:"ファミマ", store:"池袋東口店", cat:"おかず", orig:138, disc:69, pct:50, stock:6, hrs:4 },
+      { id:9, name:"牛乳 1L", emoji:"🥛", chain:"まいばすけっと", store:"恵比寿店", cat:"乳製品", orig:228, disc:114, pct:50, stock:5, hrs:24 },
+      { id:10, name:"食パン", emoji:"🍞", chain:"まいばすけっと", store:"恵比寿店", cat:"パン", orig:158, disc:79, pct:50, stock:4, hrs:18 },
+    ];
+    const STORES = [
+      { name:"セブン-イレブン 渋谷道玄坂店", chain:"セブン", count:4, addr:"東京都渋谷区道玄坂1-2-3" },
+      { name:"ローソン 新宿西口店", chain:"ローソン", count:2, addr:"東京都新宿区西新宿1-1-1" },
+      { name:"ファミリーマート 池袋東口店", chain:"ファミマ", count:2, addr:"東京都豊島区東池袋1-5-1" },
+      { name:"まいばすけっと 恵比寿店", chain:"まいばすけっと", count:2, addr:"東京都渋谷区恵比寿4-20-3" },
+    ];
+    let cart = [];
+    let filter = "すべて";
+
+    function toast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg; t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2000);
+    }
+
+    function showView(view) {
+      ["home","products","stores"].forEach(v => {
+        document.getElementById("view-"+v).classList.toggle("hidden", v !== view);
+      });
+      document.querySelectorAll(".nav-item[data-view]").forEach(el => {
+        el.classList.toggle("active", el.dataset.view === view);
+      });
+      if (view === "products") renderProducts();
+      if (view === "stores") renderStores();
+    }
+
+    function renderFilters() {
+      const cats = ["すべて", ...new Set(PRODUCTS.map(p => p.cat))];
+      document.getElementById("filters").innerHTML = cats.map(c =>
+        `<button class="tab ${c===filter?'active':''}" onclick="setFilter('${c}')">${c}</button>`
+      ).join("");
+    }
+
+    function setFilter(c) { filter = c; renderFilters(); renderProducts(); }
+
+    function renderProducts() {
+      renderFilters();
+      const list = filter === "すべて" ? PRODUCTS : PRODUCTS.filter(p => p.cat === filter);
+      document.getElementById("grid").innerHTML = list.map(p => `
+        <div class="card">
+          <div class="card-img">${p.emoji}<span class="off">${p.pct}% OFF</span><span class="stock">残${p.stock}</span></div>
+          <div class="card-body">
+            <span class="chain">${p.chain}</span>
+            <div class="name">${p.name}</div>
+            <div class="store">${p.store}</div>
+            <div class="price"><span class="now">¥${p.disc}</span><span class="was">¥${p.orig}</span></div>
+            <div class="expiry">⏰ あと${p.hrs}時間</div>
+            <button class="btn" onclick="addCart(${p.id})" ${p.stock===0?'disabled':''}>カートに追加</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderStores() {
+      document.getElementById("store-list").innerHTML = STORES.map(s => `
+        <div class="step" style="cursor:pointer" onclick="showView('products')">
+          <div style="flex:1">
+            <strong>${s.name}</strong><br>
+            <small style="color:#6b7280">📍 ${s.addr}</small>
+          </div>
+          <span style="background:#fff7ed;color:#ea580c;padding:4px 10px;border-radius:12px;font-size:0.8rem;font-weight:bold">${s.count}品</span>
+        </div>
+      `).join("");
+    }
+
+    function addCart(id) {
+      const p = PRODUCTS.find(x => x.id === id);
+      const ex = cart.find(x => x.id === id);
+      if (ex) { if (ex.qty < p.stock) ex.qty++; }
+      else cart.push({ ...p, qty: 1 });
+      updateFab();
+      toast("🛒 " + p.name + " を追加しました");
+    }
+
+    function updateFab() {
+      const n = cart.reduce((s,i) => s+i.qty, 0);
+      document.getElementById("fab-count").textContent = n;
+      document.getElementById("fab").classList.toggle("show", n > 0);
+    }
+
+    function openCart() {
+      if (!cart.length) { toast("カートは空です"); return; }
+      document.getElementById("cart-items").innerHTML = cart.map(i =>
+        `<div class="cart-item"><span>${i.emoji} ${i.name} ×${i.qty}</span><span>¥${i.disc*i.qty}</span></div>`
+      ).join("");
+      const total = cart.reduce((s,i) => s+i.disc*i.qty, 0);
+      document.getElementById("cart-total").textContent = "合計: ¥" + total + "（店頭支払い）";
+      document.getElementById("cart-modal").classList.add("show");
+    }
+
+    function closeCart() { document.getElementById("cart-modal").classList.remove("show"); }
+
+    function checkout() {
+      const code = "TH" + Math.random().toString(36).slice(2,8).toUpperCase();
+      document.getElementById("pickup-code").textContent = code;
+      closeCart();
+      cart = []; updateFab();
+      document.getElementById("success-modal").classList.add("show");
+    }
+
+    function closeSuccess() {
+      document.getElementById("success-modal").classList.remove("show");
+      showView("products");
+    }
+
+    renderStores();
+  </script>
+</body>
+</html>

@@ -360,7 +360,14 @@
         const [imeFocused, setImeFocused] = useState(true);
         const inputRef = useRef(null);
 
-        const candidates = useMemo(() => getCandidates(composing), [composing]);
+        const [candidates, setCandidates] = useState([]);
+
+        useEffect(() => {
+          const id = requestAnimationFrame(() => {
+            setCandidates(getCandidates(composing));
+          });
+          return () => cancelAnimationFrame(id);
+        }, [composing]);
 
         const readInput = useCallback(() => {
           if (inputMode === "system") return (inputRef.current?.value || "").trim();
@@ -393,8 +400,13 @@
 
         const selectCandidate = useCallback((text) => {
           appendInput(text);
-          setComposing("");
+          setComposing((c) => (window.PinyinEngine?.consumeComposing(c, text) ?? ""));
         }, [appendInput]);
+
+        const composingRef = useRef("");
+        const candidatesRef = useRef([]);
+        composingRef.current = composing;
+        candidatesRef.current = candidates;
 
         const handleSend = useCallback(() => {
           const text = readInput();
@@ -424,34 +436,52 @@
         useEffect(() => {
           if (inputMode !== "builtin" || !imeFocused) return;
           const onKey = (e) => {
+            const comp = composingRef.current;
+            const cands = candidatesRef.current;
             if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !e.ctrlKey && !e.metaKey) {
               e.preventDefault();
               setComposing((c) => c + e.key.toLowerCase());
               return;
             }
             if (e.key === "'") { e.preventDefault(); setComposing((c) => c + "'"); return; }
-            if (e.key === " " && composing) { e.preventDefault(); confirmFirstCandidate(); return; }
+            if (e.key === " " && comp) {
+              e.preventDefault();
+              if (cands.length > 0) {
+                const text = cands[0];
+                appendInput(text);
+                setComposing(window.PinyinEngine?.consumeComposing(comp, text) ?? "");
+              }
+              return;
+            }
             if (e.key === "Backspace") {
               e.preventDefault();
-              if (composing) setComposing((c) => c.slice(0, -1));
+              if (comp) setComposing((c) => c.slice(0, -1));
               else setInputText((t) => t.slice(0, -1));
               return;
             }
-            if (e.key === "Escape" && composing) { e.preventDefault(); setComposing(""); return; }
-            if (e.key >= "1" && e.key <= "9" && composing) {
+            if (e.key === "Escape" && comp) { e.preventDefault(); setComposing(""); return; }
+            if (e.key >= "1" && e.key <= "9" && comp) {
               const idx = parseInt(e.key, 10) - 1;
-              if (candidates[idx]) { e.preventDefault(); selectCandidate(candidates[idx]); }
+              if (cands[idx]) {
+                e.preventDefault();
+                const text = cands[idx];
+                appendInput(text);
+                setComposing(window.PinyinEngine?.consumeComposing(comp, text) ?? "");
+              }
               return;
             }
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              if (composing && candidates.length) confirmFirstCandidate();
-              else handleSend();
+              if (comp && cands.length) {
+                const text = cands[0];
+                appendInput(text);
+                setComposing(window.PinyinEngine?.consumeComposing(comp, text) ?? "");
+              } else handleSend();
             }
           };
           window.addEventListener("keydown", onKey);
           return () => window.removeEventListener("keydown", onKey);
-        }, [inputMode, imeFocused, composing, candidates, confirmFirstCandidate, selectCandidate, handleSend]);
+        }, [inputMode, imeFocused, appendInput, handleSend]);
 
         const handleTextareaKeyDown = useCallback((e) => {
           if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {

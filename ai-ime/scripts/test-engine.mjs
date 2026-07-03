@@ -14,3 +14,12 @@ console.log("dict keys:", PinyinEngine.dictSize);
 const t0 = performance.now();
 for (let i = 0; i < 300; i++) PinyinEngine.getCandidates("nihaowomenyiqi");
 console.log("300 queries ms:", Math.round(performance.now() - t0));
+
+for (const [raw, word, expect] of [
+  ["nihaoma", "你好", "ma"],
+  ["womenyiqi", "我们", "yiqi"],
+  ["ni", "你", ""],
+]) {
+  const got = PinyinEngine.consumeComposing(raw, word);
+  console.log(`consume ${raw}+${word} -> "${got}" (expect "${expect}")`, got === expect ? "OK" : "FAIL");
+}

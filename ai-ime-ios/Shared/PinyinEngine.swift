@@ -180,4 +180,31 @@ final class PinyinEngine {
         }
         return dp[n]?.text
     }
+
+    func consumeComposing(_ raw: String, word: String) -> String {
+        let py = normalize(raw)
+        if py.isEmpty || word.isEmpty { return "" }
+
+        for len in stride(from: min(py.count, 24), through: 1, by: -1) {
+            let prefix = String(py.prefix(len))
+            if let entries = dict[prefix], entries.contains(where: { $0.text == word }) {
+                return String(py.dropFirst(len))
+            }
+        }
+
+        if segmentSentence(py) == word { return "" }
+
+        let split = splitPinyin(py)
+        if word.count == 1 {
+            if !split.remainder.isEmpty {
+                let chars = charsForSyllable(split.remainder)
+                if chars.contains(word) { return String(py.dropFirst(split.remainder.count)) }
+            }
+            if split.complete.count == 1 {
+                let chars = charsForSyllable(split.complete[0])
+                if chars.contains(word) { return String(py.dropFirst(split.complete[0].count)) }
+            }
+        }
+        return ""
+    }
 }

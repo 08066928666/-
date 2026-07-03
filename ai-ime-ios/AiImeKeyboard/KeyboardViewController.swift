@@ -131,9 +131,8 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func commitCandidate(_ word: String) {
-        let text = smartMode ? Translator.bilingualSend(word, targetLang: targetLang) : word
-        textDocumentProxy.insertText(text)
-        composing = ""
+        textDocumentProxy.insertText(word)
+        composing = engine?.consumeComposing(composing, word: word) ?? ""
         refreshCandidates()
     }
 

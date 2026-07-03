@@ -16,7 +16,7 @@ import android.widget.Toast
 import com.aiime.keyboard.R
 
 /**
- * 系统级输入法服务 — 安装 APK 后在「设置 → 语言与输入法」中启用
+ * 轻量输入法（演示用）。正式版请使用语燕引擎：ai-ime-yuyan/
  */
 class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
@@ -31,6 +31,7 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
     private var candidateRow: LinearLayout? = null
     private var previewBar: TextView? = null
     private var modeLabel: TextView? = null
+    private var lastCandidates: List<String> = emptyList()
 
     override fun onCreate() {
         super.onCreate()
@@ -78,29 +79,22 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
         updatePreview()
     }
 
-    private fun currentIc(): InputConnection? = currentInputConnection
-
     override fun onKey(primaryCode: Int, keyCodes: IntArray?) {
         when (primaryCode) {
             Keyboard.KEYCODE_DELETE -> handleDelete()
-            Keyboard.KEYCODE_DONE -> handleSend()
+            Keyboard.KEYCODE_DONE, 10 -> handleSend()
             Keyboard.KEYCODE_MODE_CHANGE -> toggleSymbolMode()
-            -100 -> togglePinyinChinese() // 拼/中
-            -101 -> pickCandidate(0)
-            -102 -> pickCandidate(1)
-            -103 -> pickCandidate(2)
-            -104 -> pickCandidate(3)
-            -105 -> pickCandidate(4)
-            -106 -> pickCandidate(5)
-            -107 -> pickCandidate(6)
-            -108 -> pickCandidate(7)
-            -109 -> pickCandidate(8)
+            32 -> handleSpace()
+            -100 -> {
+                symbolMode = false
+                keyboardView?.keyboard = Keyboard(this, R.xml.qwerty)
+            }
             else -> {
                 if (primaryCode > 0) {
                     val ch = primaryCode.toChar()
                     if (symbolMode) {
                         commitText(ch.toString())
-                    } else {
+                    } else if (ch.isLetter()) {
                         composing.append(ch.lowercaseChar())
                         refreshCandidates()
                         updatePreview()
@@ -116,22 +110,38 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
             refreshCandidates()
             updatePreview()
         } else {
-            currentIc()?.deleteSurroundingText(1, 0)
+            currentInputConnection?.deleteSurroundingText(1, 0)
+        }
+    }
+
+    private fun handleSpace() {
+        if (composing.isNotEmpty() && lastCandidates.isNotEmpty()) {
+            commitCandidate(lastCandidates[0])
+        } else {
+            commitText(" ")
         }
     }
 
     private fun handleSend() {
-        val text = composing.toString()
-        if (text.isNotEmpty()) {
-            val candidates = engine.getCandidates(text)
-            if (candidates.isNotEmpty()) {
-                commitCandidate(candidates[0])
-            } else {
-                commitText(text)
+        if (composing.isNotEmpty()) {
+            if (lastCandidates.isNotEmpty()) commitCandidate(lastCandidates[0])
+            else {
+                commitText(composing.toString())
                 composing.clear()
+                refreshCandidates()
+            }
+            return
+        }
+        if (smartMode) {
+            val ic = currentInputConnection ?: return
+            val before = ic.getTextBeforeCursor(2000, 0)?.toString()?.trim().orEmpty()
+            if (before.isNotEmpty() && before.any { it in '\u4e00'..'\u9fff' }) {
+                val bilingual = Translator.bilingualSend(before, targetLang)
+                ic.deleteSurroundingText(before.length, 0)
+                ic.commitText(bilingual, 1)
             }
         }
-        currentIc()?.performEditorAction(EditorInfo.IME_ACTION_SEND)
+        currentInputConnection?.performEditorAction(EditorInfo.IME_ACTION_SEND)
     }
 
     private fun toggleSymbolMode() {
@@ -142,37 +152,31 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
         )
     }
 
-    private fun togglePinyinChinese() {
-        symbolMode = false
-        keyboardView?.keyboard = Keyboard(this, R.xml.qwerty)
-    }
-
-    private fun pickCandidate(index: Int) {
-        val list = engine.getCandidates(composing.toString())
-        if (index < list.size) commitCandidate(list[index])
-    }
-
     private fun commitCandidate(word: String) {
-        if (smartMode) {
-            val bilingual = Translator.bilingualSend(word, targetLang)
-            commitText(bilingual)
-        } else {
-            commitText(word)
-        }
+        commitText(word)
+        val remain = engine.consumeComposing(composing.toString(), word)
         composing.clear()
+        composing.append(remain)
         refreshCandidates()
         updatePreview()
     }
 
     private fun commitText(text: String) {
-        currentIc()?.commitText(text, 1)
+        currentInputConnection?.commitText(text, 1)
     }
 
     private fun refreshCandidates() {
         val row = candidateRow ?: return
         row.removeAllViews()
-        val list = engine.getCandidates(composing.toString())
-        list.forEachIndexed { i, word ->
+        lastCandidates = engine.getCandidates(composing.toString())
+        if (composing.isNotEmpty()) {
+            val hint = TextView(this).apply {
+                text = composing.toString()
+                setPadding(16, 8, 16, 8)
+            }
+            row.addView(hint)
+        }
+        lastCandidates.forEachIndexed { i, word ->
             val btn = Button(this).apply {
                 text = "${i + 1}.$word"
                 textSize = 14f
@@ -180,29 +184,28 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
             }
             row.addView(btn)
         }
-        if (composing.isNotEmpty()) {
-            val hint = TextView(this).apply {
-                text = composing.toString()
-                setPadding(16, 8, 16, 8)
-            }
-            row.addView(hint, 0)
-        }
     }
 
     private fun updatePreview() {
         val bar = previewBar ?: return
         if (!smartMode) {
-            bar.text = "智能翻译：关"
+            bar.text = "智能翻译：关（发送时翻译）"
             return
         }
-        val list = engine.getCandidates(composing.toString())
-        val zh = list.firstOrNull() ?: composing.toString()
-        if (zh.isBlank()) {
-            bar.text = "智能模式 · 目标语：$targetLang"
+        val draft = buildString {
+            val before = currentInputConnection?.getTextBeforeCursor(500, 0)?.toString().orEmpty()
+            append(before)
+            if (composing.isNotEmpty()) {
+                val guess = lastCandidates.firstOrNull() ?: composing.toString()
+                append(guess)
+            }
+        }.trim()
+        if (draft.isBlank()) {
+            bar.text = "智能模式 · 目标语：$targetLang · 发送时翻译"
             return
         }
-        val r = Translator.translateOutgoing(zh, targetLang)
-        bar.text = "预览：${r.translated}"
+        val r = Translator.translateOutgoing(draft, targetLang)
+        bar.text = "发送预览：${r.translated}"
     }
 
     private fun updateModeLabel() {

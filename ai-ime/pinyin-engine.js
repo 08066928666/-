@@ -151,10 +151,39 @@
       .map((x) => x.text);
   }
 
+  function consumeComposing(raw, word) {
+    const py = normalize(raw);
+    if (!py || !word) return "";
+
+    for (let len = Math.min(py.length, 24); len >= 1; len--) {
+      const prefix = py.slice(0, len);
+      const entries = DICT[prefix];
+      if (entries?.some(([t]) => t === word)) return py.slice(len);
+    }
+
+    const seg = segmentSentence(py);
+    if (seg === word) return "";
+
+    const { complete, remainder } = splitPinyin(py);
+    if (word.length === 1) {
+      if (remainder) {
+        const chars = charsForSyllable(remainder);
+        if (chars.includes(word)) return py.slice(remainder.length);
+      }
+      if (complete.length === 1) {
+        const chars = charsForSyllable(complete[0]);
+        if (chars.includes(word)) return py.slice(complete[0].length);
+      }
+    }
+
+    return "";
+  }
+
   global.PinyinEngine = {
     getCandidates,
     splitPinyin,
     normalize,
+    consumeComposing,
     dictSize: KEYS.length,
   };
 })(window);

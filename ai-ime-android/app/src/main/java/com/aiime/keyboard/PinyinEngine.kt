@@ -189,4 +189,32 @@ class PinyinEngine(context: Context) {
         }
         return dp[n]?.text
     }
+
+    /** 选词后返回剩余拼音，支持连续输入如 nihaoma → 选「你好」→ 剩 ma */
+    fun consumeComposing(raw: String, word: String): String {
+        val py = normalize(raw)
+        if (py.isEmpty() || word.isEmpty()) return ""
+
+        for (len in minOf(py.length, 24) downTo 1) {
+            val prefix = py.substring(0, len)
+            val entries = dict[prefix] ?: continue
+            if (entries.any { it.text == word }) return py.substring(len)
+        }
+
+        if (segmentSentence(py) == word) return ""
+
+        val split = splitPinyin(py)
+        if (word.length == 1) {
+            if (split.remainder.isNotEmpty()) {
+                val chars = charsForSyllable(split.remainder)
+                if (chars.contains(word)) return py.substring(split.remainder.length)
+            }
+            if (split.complete.size == 1) {
+                val chars = charsForSyllable(split.complete[0])
+                if (chars.contains(word)) return py.substring(split.complete[0].length)
+            }
+        }
+
+        return ""
+    }
 }

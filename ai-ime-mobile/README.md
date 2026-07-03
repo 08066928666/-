@@ -2,6 +2,8 @@
 
 **自带翻译功能的普通中文输入法**，可安装到 iOS / Android。
 
+> **iPhone 用户且不想写代码？** 直接看 **[IPHONE_无需开发.md](IPHONE_无需开发.md)**：App Store 装「仓输入法」+ 系统「翻译」App 即可，无需编译本仓库。
+
 详见 [ROADMAP.md](ROADMAP.md)（为何网页/轻量版不够流畅、怎么办）。
 
 ## 推荐技术路线（采用 GitHub 成熟开源代码）

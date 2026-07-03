@@ -7,7 +7,6 @@ import android.inputmethodservice.Keyboard
 import android.inputmethodservice.KeyboardView
 import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputConnection
 import android.widget.Button
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
@@ -16,22 +15,25 @@ import android.widget.Toast
 import com.aiime.keyboard.R
 
 /**
- * 轻量输入法（演示用）。正式版请使用语燕引擎：ai-ime-yuyan/
+ * 轻量输入法（演示）。流畅度远不如语燕 Rime 版，见 ai-ime-mobile/ROADMAP.md
  */
 class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
     private lateinit var engine: PinyinEngine
     private var keyboardView: KeyboardView? = null
     private var composing = StringBuilder()
+    private var associateContext = ""
     private var smartMode = true
     private var targetLang = "en"
     private var symbolMode = false
 
-    private var candidateBar: HorizontalScrollView? = null
     private var candidateRow: LinearLayout? = null
     private var previewBar: TextView? = null
     private var modeLabel: TextView? = null
     private var lastCandidates: List<String> = emptyList()
+    private var inAssociateMode = false
+
+    private val candidateViews = ArrayList<TextView>(9)
 
     override fun onCreate() {
         super.onCreate()
@@ -41,7 +43,6 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
     override fun onCreateInputView(): View {
         val root = layoutInflater.inflate(R.layout.keyboard_view, null)
         keyboardView = root.findViewById(R.id.keyboard)
-        candidateBar = root.findViewById(R.id.candidate_bar)
         candidateRow = root.findViewById(R.id.candidate_row)
         previewBar = root.findViewById(R.id.preview_bar)
         modeLabel = root.findViewById(R.id.mode_label)
@@ -68,13 +69,37 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
         }
         root.findViewById<Button>(R.id.btn_clip).setOnClickListener { translateClipboard() }
 
+        initCandidatePool()
         updateModeLabel()
         return root
+    }
+
+    private fun initCandidatePool() {
+        val row = candidateRow ?: return
+        repeat(9) { i ->
+            val tv = TextView(this).apply {
+                textSize = 16f
+                setPadding(20, 10, 20, 10)
+                setTextColor(0xFFFFFFFF.toInt())
+                visibility = View.GONE
+                setOnClickListener { onCandidateClick(i) }
+            }
+            candidateViews.add(tv)
+            row.addView(tv)
+        }
+    }
+
+    private fun onCandidateClick(index: Int) {
+        if (index >= lastCandidates.size) return
+        commitCandidate(lastCandidates[index])
     }
 
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
         super.onStartInput(attribute, restarting)
         composing.clear()
+        associateContext = ""
+        inAssociateMode = false
+        clearComposingInEditor()
         refreshCandidates()
         updatePreview()
     }
@@ -95,7 +120,9 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
                     if (symbolMode) {
                         commitText(ch.toString())
                     } else if (ch.isLetter()) {
+                        exitAssociateMode()
                         composing.append(ch.lowercaseChar())
+                        syncComposingToEditor()
                         refreshCandidates()
                         updatePreview()
                     }
@@ -104,21 +131,49 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
         }
     }
 
+    private fun exitAssociateMode() {
+        inAssociateMode = false
+        associateContext = ""
+    }
+
+    private fun syncComposingToEditor() {
+        val ic = currentInputConnection ?: return
+        if (composing.isEmpty()) {
+            ic.finishComposingText()
+        } else {
+            ic.setComposingText(composing.toString(), 1)
+        }
+    }
+
+    private fun clearComposingInEditor() {
+        currentInputConnection?.finishComposingText()
+    }
+
     private fun handleDelete() {
         if (composing.isNotEmpty()) {
             composing.deleteCharAt(composing.length - 1)
+            syncComposingToEditor()
             refreshCandidates()
             updatePreview()
+        } else if (inAssociateMode) {
+            exitAssociateMode()
+            refreshCandidates()
         } else {
             currentInputConnection?.deleteSurroundingText(1, 0)
+            updateAssociateContextFromEditor()
+            refreshCandidates()
         }
     }
 
     private fun handleSpace() {
         if (composing.isNotEmpty() && lastCandidates.isNotEmpty()) {
             commitCandidate(lastCandidates[0])
+        } else if (inAssociateMode && lastCandidates.isNotEmpty()) {
+            commitAssociate(lastCandidates[0])
         } else {
             commitText(" ")
+            updateAssociateContextFromEditor()
+            refreshCandidates()
         }
     }
 
@@ -128,6 +183,7 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
             else {
                 commitText(composing.toString())
                 composing.clear()
+                clearComposingInEditor()
                 refreshCandidates()
             }
             return
@@ -142,6 +198,9 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
             }
         }
         currentInputConnection?.performEditorAction(EditorInfo.IME_ACTION_SEND)
+        exitAssociateMode()
+        refreshCandidates()
+        updateModeLabel()
     }
 
     private fun toggleSymbolMode() {
@@ -153,12 +212,38 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
     }
 
     private fun commitCandidate(word: String) {
+        clearComposingInEditor()
         commitText(word)
         val remain = engine.consumeComposing(composing.toString(), word)
         composing.clear()
         composing.append(remain)
+        if (remain.isNotEmpty()) {
+            inAssociateMode = false
+            syncComposingToEditor()
+        } else {
+            updateAssociateContextFromEditor()
+            enterAssociateModeIfNeeded()
+        }
         refreshCandidates()
         updatePreview()
+    }
+
+    private fun commitAssociate(tail: String) {
+        commitText(tail)
+        associateContext += tail
+        enterAssociateModeIfNeeded()
+        refreshCandidates()
+        updatePreview()
+    }
+
+    private fun updateAssociateContextFromEditor() {
+        val before = currentInputConnection?.getTextBeforeCursor(8, 0)?.toString().orEmpty()
+        associateContext = before.filter { it in '\u4e00'..'\u9fff' }.takeLast(3)
+    }
+
+    private fun enterAssociateModeIfNeeded() {
+        val next = engine.getAssociates(associateContext)
+        inAssociateMode = next.isNotEmpty() && composing.isEmpty()
     }
 
     private fun commitText(text: String) {
@@ -166,24 +251,21 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
     }
 
     private fun refreshCandidates() {
-        val row = candidateRow ?: return
-        row.removeAllViews()
-        lastCandidates = engine.getCandidates(composing.toString())
-        if (composing.isNotEmpty()) {
-            val hint = TextView(this).apply {
-                text = composing.toString()
-                setPadding(16, 8, 16, 8)
-            }
-            row.addView(hint)
+        lastCandidates = when {
+            composing.isNotEmpty() -> engine.getCandidates(composing.toString())
+            inAssociateMode && associateContext.isNotEmpty() -> engine.getAssociates(associateContext)
+            else -> emptyList()
         }
-        lastCandidates.forEachIndexed { i, word ->
-            val btn = Button(this).apply {
-                text = "${i + 1}.$word"
-                textSize = 14f
-                setOnClickListener { commitCandidate(word) }
+        for (i in 0 until 9) {
+            val tv = candidateViews.getOrNull(i) ?: continue
+            if (i < lastCandidates.size) {
+                tv.visibility = View.VISIBLE
+                tv.text = lastCandidates[i]
+            } else {
+                tv.visibility = View.GONE
             }
-            row.addView(btn)
         }
+        updateModeLabel()
     }
 
     private fun updatePreview() {
@@ -192,16 +274,9 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
             bar.text = "智能翻译：关（发送时翻译）"
             return
         }
-        val draft = buildString {
-            val before = currentInputConnection?.getTextBeforeCursor(500, 0)?.toString().orEmpty()
-            append(before)
-            if (composing.isNotEmpty()) {
-                val guess = lastCandidates.firstOrNull() ?: composing.toString()
-                append(guess)
-            }
-        }.trim()
-        if (draft.isBlank()) {
-            bar.text = "智能模式 · 目标语：$targetLang · 发送时翻译"
+        val draft = currentInputConnection?.getTextBeforeCursor(500, 0)?.toString().orEmpty()
+        if (draft.isBlank() && composing.isEmpty()) {
+            bar.text = "正式版请用语燕 Rime · ai-ime-yuyan/"
             return
         }
         val r = Translator.translateOutgoing(draft, targetLang)
@@ -209,7 +284,12 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
     }
 
     private fun updateModeLabel() {
-        modeLabel?.text = if (smartMode) "智能 ON · $targetLang" else "拼音"
+        val mode = when {
+            composing.isNotEmpty() -> "拼音"
+            inAssociateMode -> "联想"
+            else -> if (smartMode) "智能 ON · $targetLang" else "拼音"
+        }
+        modeLabel?.text = mode
     }
 
     private fun translateClipboard() {

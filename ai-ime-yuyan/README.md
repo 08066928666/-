@@ -25,6 +25,8 @@ cd ai-ime-yuyan
 
 然后用 **Android Studio** 打开 `vendor/YuyanIme`，编译安装。
 
+不想自己编译？可先装官方 **[语燕 Release APK](https://github.com/gurecn/YuyanIme/releases)** 感受 Rime 流畅度（国内可用 [Gitee Releases](https://gitee.com/gurecn/YuyanIme/releases)），再编译本仓库带翻译补丁的版本。
+
 ```bash
 cd vendor/YuyanIme
 ./gradlew :app:assembleOfflineDebug

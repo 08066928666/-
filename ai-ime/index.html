@@ -152,7 +152,17 @@
       .ios-chip { flex-shrink: 0; font-size: 13px; padding: 6px 12px; border-radius: 16px; background: #fff; border: 0.5px solid rgba(60,60,67,0.12); color: var(--ios-label); }
       .ios-seg { display: flex; background: rgba(118,118,128,0.12); border-radius: 8px; padding: 2px; }
       .ios-seg button { border: none; background: transparent; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 6px; color: var(--ios-secondary); }
-      .ios-seg button.active { background: #fff; color: #000; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+      .demo-banner {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        z-index: 9999;
+        background: #ff9500;
+        color: #000;
+        font-size: 13px;
+        padding: 8px 12px;
+        text-align: center;
+        line-height: 1.4;
+      }
     </style>
   </head>
   <body>
@@ -538,6 +548,10 @@
         };
 
         return (
+          <>
+          <div className="demo-banner">
+            网页仅为演示，打字流畅度无法与手机系统输入法相比。正式版请用 Android 语燕：ai-ime-yuyan/
+          </div>
           <div className="iphone-shell">
             <div className="iphone-notch" />
             <div className="ios-status-bar">
@@ -626,6 +640,7 @@
               onSend={handleSend}
             />
           </div>
+          </>
         );
       }
 

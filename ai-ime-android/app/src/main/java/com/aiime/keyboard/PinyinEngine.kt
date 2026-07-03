@@ -15,6 +15,7 @@ class PinyinEngine(context: Context) {
     private val dict = mutableMapOf<String, List<Entry>>()
     private val chars = mutableMapOf<String, String>()
     private val prefix = mutableMapOf<String, MutableSet<String>>()
+    private val associates = mutableMapOf<String, MutableList<Pair<String, Int>>>()
     private val keys: List<String>
 
   private val syllables = setOf(
@@ -68,7 +69,46 @@ class PinyinEngine(context: Context) {
             prefix.getOrPut(p2) { mutableSetOf() }.add(key)
             prefix.getOrPut(p3) { mutableSetOf() }.add(key)
         }
+        buildAssociateIndex()
         keys = dict.keys.toList()
+    }
+
+    private fun buildAssociateIndex() {
+        for (entries in dict.values) {
+            for ((text, freq) in entries) {
+                if (text.length < 2) continue
+                for (prefixLen in 1 until text.length.coerceAtMost(4)) {
+                    val key = text.substring(0, prefixLen)
+                    val tail = text.substring(prefixLen)
+                    if (tail.isEmpty() || tail.length > 8) continue
+                    val list = associates.getOrPut(key) { mutableListOf() }
+                    val existing = list.indexOfFirst { it.first == tail }
+                    if (existing >= 0) {
+                        if (freq > list[existing].second) list[existing] = tail to freq
+                    } else {
+                        list.add(tail to freq)
+                    }
+                }
+            }
+        }
+        for ((k, list) in associates) {
+            list.sortByDescending { it.second }
+            associates[k] = list.take(24).toMutableList()
+        }
+    }
+
+    /** 联想词：上屏「我」后推荐「们」「的」等 */
+    fun getAssociates(context: String): List<String> {
+        if (context.isEmpty()) return emptyList()
+        val key = context.takeLast(3)
+        for (len in key.length downTo 1) {
+            val sub = key.takeLast(len)
+            val hit = associates[sub]
+            if (!hit.isNullOrEmpty()) {
+                return hit.take(9).map { it.first }
+            }
+        }
+        return emptyList()
     }
 
     fun normalize(py: String): String =

@@ -116,7 +116,7 @@ export default function ProductsContent() {
       ) : products.length === 0 ? (
         <div className="py-20 text-center text-gray-500">該当する商品がありません</div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((p) => (
             <ProductCard
               key={p.id}

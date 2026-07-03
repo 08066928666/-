@@ -5,16 +5,55 @@
 :root {
   --background: #fffbf7;
   --foreground: #1a1a1a;
+  --nav-bottom-height: 4.5rem;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mobile: space for bottom tab bar */
+.page-content {
+  min-height: calc(100vh - 4rem);
+  padding-bottom: calc(var(--nav-bottom-height) + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .page-content {
+    padding-bottom: 2rem;
+  }
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-bottom-offset {
+  bottom: calc(var(--nav-bottom-height) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Desktop: wider layouts, hover states */
+@media (min-width: 1024px) {
+  .page-content {
+    min-height: calc(100vh - 5rem);
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
   }
 }

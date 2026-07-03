@@ -3,14 +3,14 @@ import Link from "next/link";
 export default function HomePage() {
   return (
     <div>
-      <section className="relative overflow-hidden bg-gradient-to-br from-orange-500 via-orange-400 to-amber-400 px-4 py-20 text-white">
+      <section className="relative overflow-hidden bg-gradient-to-br from-orange-500 via-orange-400 to-amber-400 px-4 py-14 text-white sm:py-20">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute left-10 top-10 text-6xl">🍱</div>
           <div className="absolute right-20 top-20 text-5xl">🥛</div>
           <div className="absolute bottom-10 left-1/3 text-4xl">🍞</div>
         </div>
         <div className="relative mx-auto max-w-4xl text-center">
-          <h1 className="mb-4 text-4xl font-bold leading-tight md:text-5xl">
+          <h1 className="mb-4 text-3xl font-bold leading-tight sm:text-4xl md:text-5xl">
             値下げ商品を、
             <br />
             リアルタイムで。

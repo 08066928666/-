@@ -22,8 +22,9 @@ open AiIme.xcodeproj
 
 ### 必要配置
 
-1. 键盘扩展 `Info.plist` 已设置 `RequestsOpenAccess = true`（剪贴板歌词条 + 联网翻译需要）
+1. 键盘扩展 `Info.plist` 已设置 `RequestsOpenAccess = true`（可选：剪贴板歌词条与联网翻译）
 2. （可选）为 App 与键盘配置 App Group `group.com.aiime.translate`，共享目标语言设置
+3. **合规**：首次启动隐私说明；剪贴板监听默认关闭 — 见 `ai-ime-mobile/COMPLIANCE_合规与隐私.md`
 
 ## 文件结构
 

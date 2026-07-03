@@ -55,6 +55,7 @@ MIT 协议，Rime 同款引擎。把 `ai-ime-yuyan/addon` 里的翻译逻辑移�
 
 - Android 语燕：**GPL-3.0**，分发须开源  
 - iOS 键盘扩展：需 Apple 开发者账号、审核「完全访问」说明  
+- **隐私与法规**：见 [COMPLIANCE_合规与隐私.md](COMPLIANCE_合规与隐私.md)（剪贴板默认关、不做读屏、云端翻译须同意）
 
 ---
 

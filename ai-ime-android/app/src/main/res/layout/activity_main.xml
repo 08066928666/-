@@ -21,13 +21,36 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="复制即译 · 母语发送"
+            android:text="复制即译 · 母语发送 · 合规优先"
             android:textColor="#8E8E93"
             android:paddingBottom="16dp" />
 
         <include
             android:id="@+id/lyric_include"
             layout="@layout/lyric_bar" />
+
+        <TextView
+            android:id="@+id/privacy_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:lineSpacingExtra="4dp"
+            android:textSize="13sp"
+            android:textColor="#8E8E93"
+            android:text="隐私：不做读屏；剪贴板监听默认关闭，见设置。" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switch_clipboard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="复制即译（监听剪贴板）" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switch_cloud"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="使用云端翻译 API" />
 
         <TextView
             android:id="@+id/hint"

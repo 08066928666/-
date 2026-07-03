@@ -103,7 +103,7 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
         refreshCandidates()
         updateSendPreview()
         clipboardManager?.addPrimaryClipChangedListener(clipListener)
-        onClipboardChanged()
+        if (TranslatePrefs.clipboardMonitoringEnabled(this)) onClipboardChanged()
     }
 
     override fun onFinishInput() {
@@ -132,8 +132,10 @@ class AiImeService : InputMethodService(), KeyboardView.OnKeyboardActionListener
     }
 
     private fun onClipboardChanged() {
+        if (!TranslatePrefs.clipboardMonitoringEnabled(this)) return
         val clip = clipboardManager?.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()?.trim()
         if (clip.isNullOrEmpty() || clip == lastClipboard) return
+        if (TranslatePrefs.isSensitiveClipboard(clip)) return
         lastClipboard = clip
         showLyricBar(clip, insert = false)
     }

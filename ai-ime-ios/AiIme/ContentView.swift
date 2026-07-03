@@ -8,8 +8,6 @@ struct AiImeApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(clipboard)
-                .onAppear { clipboard.start() }
-                .onDisappear { clipboard.stop() }
         }
     }
 }
@@ -18,6 +16,9 @@ struct ContentView: View {
     @EnvironmentObject private var clipboard: ClipboardMonitor
     @State private var smartMode = SharedSettings.smartMode
     @State private var targetLang = SharedSettings.targetLang
+    @State private var clipboardEnabled = SharedSettings.clipboardMonitoringEnabled
+    @State private var cloudEnabled = SharedSettings.cloudTranslationEnabled
+    @State private var showPrivacy = !SharedSettings.privacyConsentAccepted
 
     var body: some View {
         NavigationStack {
@@ -26,16 +27,24 @@ struct ContentView: View {
                     Section("安装键盘") {
                         Text("1. 打开「设置 → 通用 → 键盘 → 键盘」")
                         Text("2. 添加新键盘 → 选择「AI 翻译输入法」")
-                        Text("3. 开启「允许完全访问」（发送翻译与剪贴板歌词条需要）")
+                        Text("3. 需要歌词条/联网翻译时，再开启「允许完全访问」")
                         Text("4. 在 LINE、微信等 App 中点地球图标切换键盘")
                     }
                     Section("收消息 · 复制歌词条") {
-                        Text("在聊天 App 里长按复制外文消息")
-                        Text("本 App 或键盘上方会显示歌词式双行字幕")
+                        Toggle("复制即译（监听剪贴板）", isOn: $clipboardEnabled)
+                            .onChange(of: clipboardEnabled) { v in
+                                SharedSettings.clipboardMonitoringEnabled = v
+                                clipboard.restartIfNeeded()
+                            }
+                        Text("合规说明：仅在你 **主动复制** 后读取一次剪贴板并显示字幕，不会自动读 LINE/微信聊天。")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                     Section("发消息 · 发送翻译") {
                         Toggle("智能翻译", isOn: $smartMode)
                             .onChange(of: smartMode) { SharedSettings.smartMode = $0 }
+                        Toggle("使用云端翻译 API", isOn: $cloudEnabled)
+                            .onChange(of: cloudEnabled) { SharedSettings.cloudTranslationEnabled = $0 }
                         HStack {
                             Text("目标语言")
                             Spacer()
@@ -45,10 +54,15 @@ struct ContentView: View {
                                 targetLang = SharedSettings.cycleTargetLang()
                             }
                         }
-                        Text("输入中文后点「发送」，自动译成外语并附带中文对照")
+                        Text(cloudEnabled
+                             ? "开启后，你输入的文字可能发送至第三方翻译服务，详见隐私政策。"
+                             : "当前为本地演示词典，不上传任何内容。")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
-                    Section("说明") {
-                        Text("iOS 无法自动读取 LINE 私聊，请复制消息。歌词条在复制后自动出现。")
+                    Section("隐私与合规") {
+                        Text("不做读屏 / 无障碍爬取；不默认监听剪贴板。")
+                        Text("完整说明见仓库 ai-ime-mobile/COMPLIANCE_合规与隐私.md")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -66,6 +80,16 @@ struct ContentView: View {
             }
             .animation(.easeInOut(duration: 0.25), value: clipboard.lyricVisible)
             .navigationTitle("AI 翻译助手")
+            .onAppear { clipboard.restartIfNeeded() }
+            .onDisappear { clipboard.stop() }
+            .sheet(isPresented: $showPrivacy) {
+                PrivacyConsentView(accepted: .constant(false)) {
+                    showPrivacy = false
+                    clipboardEnabled = SharedSettings.clipboardMonitoringEnabled
+                    clipboard.restartIfNeeded()
+                }
+                .interactiveDismissDisabled()
+            }
         }
     }
 

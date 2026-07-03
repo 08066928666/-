@@ -80,8 +80,10 @@ class ClipboardLyricWatcher(
     }
 
     fun check() {
+        if (!SmartTranslatePrefs.clipboardMonitoringEnabled(context)) return
         val text = clipboard.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString()?.trim()
         if (text.isNullOrEmpty() || text == lastSeen) return
+        if (SmartTranslatePrefs.isSensitiveClipboard(text)) return
         lastSeen = text
         if (SmartTranslate.containsChinese(text)) {
             bar.hide()

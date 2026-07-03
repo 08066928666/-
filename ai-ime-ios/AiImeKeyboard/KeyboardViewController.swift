@@ -135,7 +135,9 @@ final class KeyboardViewController: UIInputViewController {
     }
 
     private func startClipboardWatch() {
-        guard hasFullAccess else { return }
+        guard hasFullAccess,
+              SharedSettings.privacyConsentAccepted,
+              SharedSettings.clipboardMonitoringEnabled else { return }
         checkClipboard()
         clipboardTimer?.invalidate()
         clipboardTimer = Timer.scheduledTimer(withTimeInterval: 0.9, repeats: true) { [weak self] _ in
@@ -145,8 +147,10 @@ final class KeyboardViewController: UIInputViewController {
 
     private func checkClipboard() {
         guard hasFullAccess,
+              SharedSettings.clipboardMonitoringEnabled,
               let text = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines),
               !text.isEmpty,
+              !SharedSettings.isSensitiveClipboard(text),
               text != lastClipboard else { return }
 
         lastClipboard = text

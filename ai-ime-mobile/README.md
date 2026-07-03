@@ -4,6 +4,7 @@
 
 > **产品愿景与功能说明**：[PLUGIN_全球沟通.md](PLUGIN_全球沟通.md)  
 > **技术加装方案**：[PRODUCT_加装翻译.md](PRODUCT_加装翻译.md)  
+> **合规与隐私（必读）**：[COMPLIANCE_合规与隐私.md](COMPLIANCE_合规与隐私.md)  
 > iPhone 零开发先用：[IPHONE_无需开发.md](IPHONE_无需开发.md)
 
 详见 [ROADMAP.md](ROADMAP.md)。

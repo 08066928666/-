@@ -1,0 +1,8 @@
+customtkinter>=5.2.0
+pillow>=10.0.0
+pystray>=0.19.0
+keyboard>=0.13.5
+pyperclip>=1.8.2
+deep-translator>=1.11.4
+langdetect>=1.0.9
+pyautogui>=0.9.54

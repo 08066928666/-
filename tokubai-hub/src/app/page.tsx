@@ -22,16 +22,16 @@ export default function HomePage() {
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
-              href="/products"
+              href="/demo"
               className="rounded-xl bg-white px-8 py-3 font-bold text-orange-600 shadow-lg transition hover:shadow-xl"
             >
-              値下げ商品を見る
+              🚀 デモを体験する
             </Link>
             <Link
-              href="/register"
-              className="rounded-xl border-2 border-white px-8 py-3 font-bold text-white transition hover:bg-white/10"
+              href="/products"
+              className="rounded-xl border-2 border-white/80 px-8 py-3 font-bold text-white transition hover:bg-white/10"
             >
-              無料で始める
+              値下げ商品を見る
             </Link>
           </div>
         </div>

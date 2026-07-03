@@ -6,8 +6,8 @@ import { useCart } from "./CartProvider";
 
 const tabs = [
   { href: "/", label: "ホーム", icon: "🏠" },
+  { href: "/demo", label: "デモ", icon: "🚀" },
   { href: "/products", label: "商品", icon: "🏷️" },
-  { href: "/stores", label: "店舗", icon: "🏪" },
   { href: "/cart", label: "カート", icon: "🛒", showBadge: true },
   { href: "/orders", label: "注文", icon: "📋" },
 ];

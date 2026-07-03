@@ -1,11 +1,10 @@
-name: Deploy stable demo to GitHub Pages
+name: Deploy stable demo to gh-pages
 
 on:
   push:
     branches:
       - cursor/tokubai-hub-mvp-cb9a
       - main
-      - master
     paths:
       - 'docs/**'
       - 'tokubai-hub/demo-standalone.html'
@@ -13,40 +12,22 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
+  contents: write
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sync demo HTML
+      - name: Prepare demo site
         run: |
           mkdir -p docs
           cp tokubai-hub/demo-standalone.html docs/index.html
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: docs
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          force_orphan: true

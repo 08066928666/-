@@ -1,0 +1,33 @@
+name: Deploy stable demo to gh-pages
+
+on:
+  push:
+    branches:
+      - cursor/tokubai-hub-mvp-cb9a
+      - main
+    paths:
+      - 'docs/**'
+      - 'tokubai-hub/demo-standalone.html'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare demo site
+        run: |
+          mkdir -p docs
+          cp tokubai-hub/demo-standalone.html docs/index.html
+
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          force_orphan: true

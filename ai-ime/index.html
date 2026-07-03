@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="./dict-words.js"></script>
     <script src="./pinyin-engine.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
@@ -80,6 +81,35 @@
       .candidate-chip.active {
         background: #007aff;
         color: #fff;
+      }
+      .ios-candidate-strip {
+        background: #cfd4da;
+        border-top: 1px solid #b8bec6;
+        min-height: 44px;
+      }
+      .ios-ime-field {
+        min-height: 44px;
+        line-height: 1.5;
+        word-break: break-word;
+        cursor: text;
+      }
+      .ios-preedit {
+        text-decoration: underline;
+        text-decoration-color: #007aff;
+        text-underline-offset: 3px;
+        color: #7ec0ff;
+      }
+      .ios-caret {
+        display: inline-block;
+        width: 2px;
+        height: 1.1em;
+        background: #007aff;
+        margin-left: 1px;
+        vertical-align: text-bottom;
+        animation: blink 1s step-end infinite;
+      }
+      @keyframes blink {
+        50% { opacity: 0; }
       }
       .candidate-num {
         font-size: 11px;
@@ -201,40 +231,59 @@
       }
 
       function CandidateBar({ composing, candidates, onSelect }) {
-        if (!composing) return null;
-        return (
-          <div className="mx-2 mb-2 px-2 py-2 bg-white rounded-xl shadow-sm">
-            <div className="flex items-center gap-2 mb-2 px-1">
-              <span className="text-blue-600 font-semibold text-sm">{composing}</span>
-              <span className="text-gray-400 text-xs">拼音</span>
+        if (!composing) {
+          return (
+            <div className="ios-candidate-strip flex items-center px-3 text-xs text-gray-500">
+              iOS 拼音 · 词库 {window.PinyinEngine?.dictSize?.toLocaleString() || "—"} 条
             </div>
-            {candidates.length > 0 ? (
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {candidates.map((c, i) => (
-                  <button
-                    key={`${c}-${i}`}
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => onSelect(c)}
-                    className={`candidate-chip ${i === 0 ? "active" : ""}`}
-                  >
-                    <span className="candidate-num">{i + 1}</span>
-                    {c}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-gray-500 px-1">继续输入拼音，或切换系统输入法直接打中文</p>
-            )}
-            <p className="text-[10px] text-gray-400 mt-1.5 px-1">空格/1选首词 · 2-9选候选 · Esc 清空拼音</p>
+          );
+        }
+        return (
+          <div className="ios-candidate-strip flex items-center gap-1.5 px-2 py-1.5 overflow-x-auto">
+            {candidates.map((c, i) => (
+              <button
+                key={`${c}-${i}`}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => onSelect(c)}
+                className={`candidate-chip ${i === 0 ? "active" : ""}`}
+              >
+                {i < 9 && <span className="candidate-num">{i + 1}</span>}
+                {c}
+              </button>
+            ))}
           </div>
         );
       }
 
-      function Keyboard({ onKey, onSend, smartMode, onToggleSmart, composing, inputMode, onInputModeChange, onSpace, onBackspace, onSelectCandidate }) {
+      function IosImeField({ inputText, composing, focused, onFocus, placeholder }) {
+        return (
+          <div
+            className="ios-ime-field flex-1 text-[16px] text-white"
+            onMouseDown={(e) => { e.preventDefault(); onFocus(); }}
+          >
+            {inputText || composing ? (
+              <>
+                <span>{inputText}</span>
+                {composing && <span className="ios-preedit">{composing}</span>}
+                {focused && <span className="ios-caret" />}
+              </>
+            ) : (
+              <span className="text-gray-500">{placeholder}</span>
+            )}
+          </div>
+        );
+      }
+
+      const PUNCT_KEYS = ["，", "。", "？", "！", "、", "…", "~", "：", "；", "（", "）", "「", "」"];
+
+      function Keyboard({ onKey, onSend, smartMode, onToggleSmart, composing, inputMode, onInputModeChange, onSpace, onBackspace, onSelectCandidate, candidates }) {
+        const [kbLayout, setKbLayout] = React.useState("letters");
+
         const handleKey = (k) => {
           if (k === "⌫") onBackspace();
           else if (k === "⇧") return;
+          else if (k === "'") onKey("'");
           else onKey(k);
         };
 
@@ -277,6 +326,10 @@
               </div>
             </div>
 
+            <CandidateBar composing={inputMode === "builtin" ? composing : ""} candidates={candidates} onSelect={onSelectCandidate} />
+
+            {kbLayout === "letters" ? (
+            <>
             {/* 字母键 */}
             {PINYIN_KEYS.map((row, ri) => (
               <div key={ri} className="flex justify-center gap-[5px] mb-[7px] px-1">
@@ -298,7 +351,14 @@
 
             {/* 底行 */}
             <div className="flex justify-center gap-[5px] px-1">
-              <button type="button" onMouseDown={(e) => e.preventDefault()} className="key key-special w-[52px] h-[42px] text-[14px]">123</button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setKbLayout((l) => (l === "letters" ? "punct" : "letters"))}
+                className="key key-special w-[52px] h-[42px] text-[14px]"
+              >
+                {kbLayout === "letters" ? "123" : "ABC"}
+              </button>
               <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={onSpace} className="key flex-1 h-[42px] text-[14px]">空格</button>
               <button
                 type="button"
@@ -309,6 +369,21 @@
                 发送
               </button>
             </div>
+            </>
+            ) : (
+            <>
+            <div className="grid grid-cols-7 gap-[5px] px-2 mb-2">
+              {PUNCT_KEYS.map((p) => (
+                <button key={p} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => onKey(p)} className="key h-[40px] text-lg">{p}</button>
+              ))}
+            </div>
+            <div className="flex justify-center gap-[5px] px-1">
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setKbLayout("letters")} className="key key-special w-[72px] h-[42px] text-[14px]">ABC</button>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={onSpace} className="key flex-1 h-[42px] text-[14px]">空格</button>
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={onSend} className="key key-send w-[72px] h-[42px] text-[15px] font-semibold">发送</button>
+            </div>
+            </>
+            )}
           </div>
         );
       }
@@ -319,12 +394,16 @@
         const [messages, setMessages] = useState(INITIAL_MESSAGES.en);
         const [inputText, setInputText] = useState("");
         const [composing, setComposing] = useState("");
-        const [inputMode, setInputMode] = useState("builtin"); // builtin=内置拼音(iOS式) | system=系统输入法
+        const [inputMode, setInputMode] = useState("builtin");
+        const [imeFocused, setImeFocused] = useState(true);
         const inputRef = useRef(null);
 
         const candidates = useMemo(() => getCandidates(composing), [composing]);
 
-        const readInput = useCallback(() => (inputRef.current?.value || "").trim(), []);
+        const readInput = useCallback(() => {
+          if (inputMode === "system") return (inputRef.current?.value || "").trim();
+          return inputText.trim();
+        }, [inputMode, inputText]);
 
         const syncInput = useCallback(() => {
           const v = inputRef.current?.value || "";
@@ -333,17 +412,16 @@
         }, []);
 
         const writeInput = useCallback((value) => {
-          if (inputRef.current) {
-            inputRef.current.value = value;
-            setInputText(value);
-          }
+          setInputText(value);
+          if (inputRef.current) inputRef.current.value = value;
         }, []);
 
         const appendInput = useCallback((text) => {
-          if (inputRef.current) {
-            inputRef.current.value += text;
-            setInputText(inputRef.current.value);
-          }
+          setInputText((t) => {
+            const next = t + text;
+            if (inputRef.current) inputRef.current.value = next;
+            return next;
+          });
         }, []);
 
         const previewTranslation = useMemo(() => {
@@ -351,14 +429,9 @@
           return translateFromZh(inputText.trim(), partnerLang);
         }, [inputText, smartMode, partnerLang]);
 
-        useEffect(() => {
-          inputRef.current?.focus();
-        }, []);
-
         const selectCandidate = useCallback((text) => {
           appendInput(text);
           setComposing("");
-          inputRef.current?.focus();
         }, [appendInput]);
 
         const handleSend = useCallback(() => {
@@ -381,55 +454,49 @@
           return false;
         }, [composing, candidates, selectCandidate]);
 
-        const handleTextareaKeyDown = useCallback((e) => {
-          if (inputMode === "builtin") {
-            if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        useEffect(() => {
+          if (inputMode === "system") inputRef.current?.focus();
+          else setImeFocused(true);
+        }, [inputMode]);
+
+        useEffect(() => {
+          if (inputMode !== "builtin" || !imeFocused) return;
+          const onKey = (e) => {
+            if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !e.ctrlKey && !e.metaKey) {
               e.preventDefault();
               setComposing((c) => c + e.key.toLowerCase());
               return;
             }
-
-            if (e.key === " " && composing) {
+            if (e.key === "'") { e.preventDefault(); setComposing((c) => c + "'"); return; }
+            if (e.key === " " && composing) { e.preventDefault(); confirmFirstCandidate(); return; }
+            if (e.key === "Backspace") {
               e.preventDefault();
-              confirmFirstCandidate();
+              if (composing) setComposing((c) => c.slice(0, -1));
+              else setInputText((t) => t.slice(0, -1));
               return;
             }
-
-            if (e.key === "Backspace" && composing) {
-              e.preventDefault();
-              setComposing((c) => c.slice(0, -1));
-              return;
-            }
-
-            if (e.key === "Escape" && composing) {
-              e.preventDefault();
-              setComposing("");
-              return;
-            }
-
-            if (e.key >= "1" && e.key <= "9" && composing && candidates.length > 0) {
+            if (e.key === "Escape" && composing) { e.preventDefault(); setComposing(""); return; }
+            if (e.key >= "1" && e.key <= "9" && composing) {
               const idx = parseInt(e.key, 10) - 1;
-              if (candidates[idx]) {
-                e.preventDefault();
-                selectCandidate(candidates[idx]);
-                return;
-              }
+              if (candidates[idx]) { e.preventDefault(); selectCandidate(candidates[idx]); }
+              return;
             }
-
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              if (composing && candidates.length > 0) {
-                confirmFirstCandidate();
-              } else {
-                handleSend();
-              }
-              return;
+              if (composing && candidates.length) confirmFirstCandidate();
+              else handleSend();
             }
-          } else if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+          };
+          window.addEventListener("keydown", onKey);
+          return () => window.removeEventListener("keydown", onKey);
+        }, [inputMode, imeFocused, composing, candidates, confirmFirstCandidate, selectCandidate, handleSend]);
+
+        const handleTextareaKeyDown = useCallback((e) => {
+          if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
             e.preventDefault();
             handleSend();
           }
-        }, [inputMode, composing, candidates, confirmFirstCandidate, selectCandidate, handleSend]);
+        }, [handleSend]);
 
         const switchLang = (lang) => {
           setPartnerLang(lang);
@@ -440,20 +507,28 @@
 
         const handleKey = useCallback((k) => {
           if (inputMode !== "builtin") return;
+          if (k === "'") {
+            setComposing((c) => c + "'");
+            return;
+          }
           if (k.length === 1 && /[a-z]/.test(k)) {
             setComposing((c) => c + k);
+          } else if (k.length === 1 && /[\u4e00-\u9fff，。！？、…~：；（）「」]/.test(k)) {
+            appendInput(k);
+            setComposing("");
           }
-        }, [inputMode]);
+        }, [inputMode, appendInput]);
 
         const handleBackspace = useCallback(() => {
           if (composing) {
             setComposing((c) => c.slice(0, -1));
             return;
           }
-          if (inputRef.current) {
-            inputRef.current.value = inputRef.current.value.slice(0, -1);
-            setInputText(inputRef.current.value);
-          }
+          setInputText((t) => {
+            const next = t.slice(0, -1);
+            if (inputRef.current) inputRef.current.value = next;
+            return next;
+          });
         }, [composing]);
 
         const handleSpace = useCallback(() => {
@@ -536,21 +611,30 @@
 
               {/* 输入框 */}
               <div className="px-3 py-2 border-t border-white/10">
-                <CandidateBar composing={inputMode === "builtin" ? composing : ""} candidates={candidates} onSelect={selectCandidate} />
-                <div className="flex items-start gap-2 bg-[#1e2328] rounded-xl px-3 py-2 ring-1 ring-white/5 focus-within:ring-green-500/40">
-                  <textarea
-                    ref={inputRef}
-                    rows={2}
-                    defaultValue=""
-                    onInput={syncInput}
-                    onKeyDown={handleTextareaKeyDown}
-                    placeholder="打拼音如 nihao → 选「你好」· 也可直接粘贴中文"
-                    className="flex-1 bg-transparent text-[15px] outline-none placeholder:text-gray-600 text-white resize-none leading-relaxed"
-                  />
+                <div className="flex items-start gap-2 bg-[#1e2328] rounded-xl px-3 py-2 ring-1 ring-white/5">
+                  {inputMode === "builtin" ? (
+                    <IosImeField
+                      inputText={inputText}
+                      composing={composing}
+                      focused={imeFocused}
+                      onFocus={() => setImeFocused(true)}
+                      placeholder="打拼音，如 nihao / womenyiqiwan → 选词发送"
+                    />
+                  ) : (
+                    <textarea
+                      ref={inputRef}
+                      rows={2}
+                      defaultValue=""
+                      onInput={syncInput}
+                      onKeyDown={handleTextareaKeyDown}
+                      placeholder="系统输入法模式：用微软拼音/搜狗等直接打字"
+                      className="flex-1 bg-transparent text-[16px] outline-none placeholder:text-gray-600 text-white resize-none leading-relaxed"
+                    />
+                  )}
                   {smartMode && <SmartBadge on />}
                 </div>
                 <p className="text-[11px] text-gray-600 mt-1 px-1">
-                  iOS 式输入：连续拼音出词组 · 空格确认 · 1-9 选候选 · 两次 Enter 发送
+                  iOS 拼音：连续输入整句拼音 · 空格选词 · 1-9 切换候选 · 123 标点
                 </p>
               </div>
 
@@ -581,6 +665,7 @@
               onSpace={handleSpace}
               onBackspace={handleBackspace}
               onSelectCandidate={selectCandidate}
+              candidates={candidates}
               onSend={handleSend}
             />
 

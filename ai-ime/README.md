@@ -4,7 +4,23 @@
 
 ## 打开方式
 
-用浏览器直接打开 `index.html`。
+用浏览器打开 `index.html`（需联网加载 CDN）。
+
+首次克隆后若缺少 `dict-words.js`，运行：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mozillazg/phrase-pinyin-data/master/pinyin.txt -o /tmp/pinyin.txt
+node scripts/build-dict.mjs /tmp/pinyin.txt
+```
+
+## 输入能力（对标 iOS 拼音）
+
+- **4 万+ 词条**（基于开源词库 mozillazg/phrase-pinyin-data）
+- **整词/整句候选**：`nihao`→你好，`womenyiqiwan`→我们一起玩
+- **候选栏在键盘上方**（iOS 布局），空格选首词，1-9 数字选候选
+- **拼音预编辑区**：未确认拼音蓝色下划线显示
+- **123 标点面板**：，。！？等
+- **拼 / 中 切换**：内置拼音 vs 系统输入法
 
 ## 使用场景
 
@@ -43,7 +59,7 @@
 
 - **iOS**：Keyboard Extension + App Group 共享翻译服务
 - **Android**：InputMethodService + 悬浮翻译条
-- **Windows（Steam）**：全局钩子 / Overlay + 剪贴板监听，或 Steam 插件
+- **Windows（Steam）**：见 `ai-ime-windows/` — 悬浮输入栏 + 剪贴板监听 + 全局热键
 - **翻译引擎**：本地小模型（低延迟）+ 云端大模型（高质量），按场景切换
 
 ## 与微信翻译的对比

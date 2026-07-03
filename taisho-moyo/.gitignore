@@ -1,0 +1,9 @@
+# 静态构建产物（npm run build 生成）
+dist/
+
+# 根目录快捷副本（npm run build 后自动复制，可选）
+/../退房无忧/
+
+node_modules
+.DS_Store
+*.log

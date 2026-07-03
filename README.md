@@ -1,38 +1,35 @@
-# Haseko 报价点餐原型
+# 工作区说明
 
-## 打开方式
+本仓库包含**两个独立项目**，互不关联：
 
-直接双击 `index.html`，或用浏览器打开该文件。
+## 1. 退房无忧（租客端）
 
-## 当前实现
+**目录：** `taisho-moyo/`
 
-- 左侧 13 个工事分类导航
-- 右侧点餐卡片（已完整实现：壁纸工事、设备工事）
-- 点击添加后进入明细列表
-- 支持导出：
-  - `estimate_export.json`
-  - `estimate_export.tsv`（可直接用 Excel 打开）
+日本租房退房自检助手，帮助租客避免立会时被过度收费。
 
-## 导出字段
+```bash
+cd taisho-moyo
+npm install
+npm start
+```
 
-导出结构与 Tampermonkey 导入脚本对齐，包含：
+打开：**http://localhost:3000**
 
-- `row_kbn`（1=工种1, 2=工种2, 3=明细）
-- `koshu1_text`
-- `koshu2_koban`
-- `sel_koshu2_cd`
-- `koshu2_text`
-- `taisho1`
-- `taisho2`
-- `koji_naiyo`
-- `basho`
-- `bui`
-- `zumen_suryo`
-- `suryo`
-- `tani`
-- `tanka`
-- `price`
-- `biko1`
-- `maker`
-- `type`
-- `comment`
+> 注意：端口 3000 专用于退房无忧。仓库根目录的 `index.html` 是其他项目，请勿混淆。
+
+## 2. Haseko 报价点餐原型（施工方 B 端）
+
+**目录：** `excel-grid/` 或根目录 `index.html`
+
+长谷工系见积录入原型，供施工方/管理公司使用。
+
+```bash
+cd excel-grid
+npm install
+npm run dev
+```
+
+---
+
+快捷入口：双击根目录 `退房无忧.html` 可跳转到退房无忧开发服务（需先 `npm start`）。

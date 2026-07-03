@@ -1,0 +1,25 @@
+{
+  "name": "taisho-moyo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "退房无忧 — 日本租房退房自检助手",
+  "type": "module",
+  "scripts": {
+    "dev": "node ./node_modules/vite/bin/vite.js --host 0.0.0.0 --port 3000",
+    "start": "node ./node_modules/vite/bin/vite.js --host 0.0.0.0 --port 3000",
+    "build": "node ./node_modules/vite/bin/vite.js build",
+    "serve": "npm run build && node serve.mjs",
+    "preview": "node serve.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "vite": "^5.4.11"
+  }
+}

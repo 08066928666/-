@@ -30,7 +30,7 @@ function score(text) {
   return s;
 }
 
-const GAMING_BOOST = new Set([
+const COMMON_PHRASE_BOOST = new Set([
   "你好", "谢谢", "好的", "没问题", "加油", "厉害", "一起玩", "再来一局", "打得好",
   "开心", "可以", "加我", "我是中国人", "英语不太好", "很高兴", "再见", "不好意思",
   "厉害", "牛逼", "冲啊", "走吧", "开始", "等我", "马上", "来吧", "怎么样",
@@ -40,7 +40,7 @@ const lines = fs.readFileSync(src, "utf8").split("\n");
 const index = Object.create(null);
 const chars = Object.create(null);
 
-const GAMING_PHRASES = [
+const COMMON_PHRASES = [
   ["nihaowoyewankaixin", "你好！我也玩得很开心。"],
   ["haodezailaiyijuba", "好的，再来一局吧。"],
   ["xiexieniyehenlihai", "谢谢，你也很厉害。"],
@@ -79,7 +79,7 @@ for (const line of lines) {
   if (!key || key.length > 32) continue;
   if (!/^[a-z]+$/.test(key)) continue;
 
-  const freq = score(text) + (GAMING_BOOST.has(text) ? 3000 : 0);
+  const freq = score(text) + (COMMON_PHRASE_BOOST.has(text) ? 3000 : 0);
   if (!index[key]) index[key] = [];
   const exists = index[key].find((x) => x[0] === text);
   if (!exists) index[key].push([text, freq]);
@@ -91,7 +91,7 @@ for (const line of lines) {
   }
 }
 
-for (const [key, text] of GAMING_PHRASES) {
+for (const [key, text] of COMMON_PHRASES) {
   const freq = score(text) + 5000;
   if (!index[key]) index[key] = [];
   const exists = index[key].find((x) => x[0] === text);

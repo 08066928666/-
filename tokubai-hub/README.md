@@ -27,12 +27,40 @@
 
 ```bash
 cd tokubai-hub
+npm run demo
+```
+
+`npm run demo` は依存関係のインストール、`.env` 作成、データベース初期化、開発サーバー起動を一括で行います。
+
+ブラウザで **http://localhost:3000** を開いてください。
+
+### 手動セットアップ
+
+```bash
+cd tokubai-hub
 npm install
-npm run db:setup   # マイグレーション + シードデータ
+cp .env.example .env
+npm run db:setup
 npm run dev
 ```
 
-http://localhost:3000 でアクセス
+### Cursor / リモート環境で開けない場合
+
+1. ターミナルで `cd tokubai-hub && npm run demo` を実行
+2. Cursor の **Ports（ポート）** パネルで `3000` を確認
+3. 「Open in Browser」または「Port Visibility → Public」でブラウザを開く
+
+`localhost:3000` はサーバーが動いているマシン上でのみ有効です。リモート環境ではポート転送が必要です。
+
+### Windows でエラーが出る場合
+
+`better-sqlite3` のビルドに Visual Studio Build Tools が必要な場合があります:
+
+```bash
+npm install --global windows-build-tools
+```
+
+または [Node.js LTS](https://nodejs.org/) を再インストール後、再度 `npm run demo` を試してください。
 
 ## デモアカウント（パスワード: `demo1234`）
 

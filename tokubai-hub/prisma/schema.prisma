@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum UserRole {
+  CUSTOMER
+  MERCHANT
+  ADMIN
+}
+
+enum ProductCategory {
+  BENTO
+  SIDE_DISH
+  SEASONING
+  BREAD
+  DAIRY
+  SNACK
+  BEVERAGE
+  OTHER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  READY
+  PICKED_UP
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  orders    Order[]
+  stores    Store[]
+}
+
+model Store {
+  id        String    @id @default(cuid())
+  name      String
+  chain     String
+  address   String
+  latitude  Float
+  longitude Float
+  phone     String?
+  openHours String    @default("6:00-23:00")
+  merchantId String
+  merchant  User      @relation(fields: [merchantId], references: [id])
+  products  Product[]
+  orders    Order[]
+  createdAt DateTime  @default(now())
+}
+
+model Product {
+  id              String          @id @default(cuid())
+  storeId         String
+  store           Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name            String
+  category        ProductCategory
+  description     String?
+  originalPrice   Int
+  discountPrice   Int
+  discountPercent Int
+  expiryAt        DateTime
+  quantity        Int             @default(1)
+  imageEmoji      String          @default("🍱")
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  orderItems      OrderItem[]
+
+  @@index([storeId])
+  @@index([category])
+  @@index([expiryAt])
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  storeId     String
+  store       Store       @relation(fields: [storeId], references: [id])
+  status      OrderStatus @default(PENDING)
+  pickupCode  String      @unique
+  totalAmount Int
+  note        String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  items       OrderItem[]
+
+  @@index([userId])
+  @@index([storeId])
+  @@index([pickupCode])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Int
+}

@@ -7,9 +7,11 @@
 - `見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html` — table#Costs、row_kbn、sel_koshu2_cd、kojikomoku_id
 - `index.html` — getFieldValueFromDoc / buildExportRows 的字段契约
 
-未提供文件说明：
-- 若缺少你本地的 `haseko.html` / `template.xlsx`，则「御見積書」公式、項目 Sheet 精确列号以 **推断** 形式写在
-  EXCEL_KOUMOKU_COLUMN_MAP 中；拿到 xlsx 后用 openpyxl 读公式 `=IF(項目!B15="","",…)` 即可对齐列。
+列映射の検証状況（2026-11-07 更新）：
+- 1415 号室の帳票実物で検証済み。落点は「帳票」シート、表頭 20 行目、明細 24 行目から。
+  旧推断（「項目」シート・A–K・15 行目）は誤りだったため EXCEL_CHOHYO_COLUMN_MAP に置き換えた。
+  詳細は `~/workspace/user/files/haseko_quote_sort_engine_列映射校验_2026-11-07.md` と
+  同ディレクトリの修复记录を参照。
 
 ---------------------------------------------------------------------------
 1) row_kbn（HTML 隐藏域）含义验证
@@ -38,32 +40,33 @@
   本引擎保留 **全部 cd 值** 作为桶 id，并把廃止标记在 KOUSHU2_META。
 
 ---------------------------------------------------------------------------
-3) Excel 項目 Sheet 列映射（推断，待 template.xlsx 校验）
+3) Excel 帳票 Sheet 列映射（2026-11-07 1415号室実物で検証済み）
 ---------------------------------------------------------------------------
-典型見積「項目」明細列（从左起）与 HTML 字段对应推断：
+検証済みの落点は「帳票」シート（62 列 A:BJ）、表頭 20 行目、明細 24 行目から。
+「項目」シートは頭情報のみ（B15 物件CD など）で明細区はない。旧推断
+（項目・A–K・15 行目）は誤りだったため、2026-11-07 に置き換えた。
 
-  A  連番 / 空
-  B  科目・摘要  →  often 工事内容 koji_naiyo 或 combined label
-  C  対象1       → taisho1
-  D  対象2       → taisho2
-  E  場所         → basho
-  F  部位         → bui
-  G  図面数量     → zumen_suryo
-  H  数量         → suryo
-  I  単位         → tani
-  J  単価         → tanka
-  K  金額         → kakaku（=suryo*tanka 或由画面算出）
-  …（借主负担等列因模板而异）
-
-御見積書 Sheet 用 `=IF(項目!B15="","",項目!B15)` 一类公式时，B15 即「項目」Sheet 第15行第2列，
-具体行偏移需打开 xlsx 确认标题占用行数。
+  A  工種1タイトル行 / 工種2タイトル行は小番 (koshu2_koban)
+  C  工事内容 — クロス行は部屋名 (basho)、非クロス行は taisho1 + koji_naiyo
+  O  場所 (basho、非クロス行)
+  N  天井数量 / R 壁数量（クロス行のみ。天井・壁 2 明細を 1 行に統合）
+  AC 備考・原因 (biko1)
+  AD 図面数量 (zumen_suryo。本案は HTML・実表とも空のため有値未検証)
+  AH 数量（クロス行は N+R）
+  AL 単位 / AO 単価 / AS 金額
+  AW 貸主負担％ / AY 貸主負担額 / BC 借主負担％ / BE 借主負担額
+  BI 削除・修正前マーク — HTML に該当情報がないため本エンジンは出さない
+  メーカー・型番は翌行の C 列に附注行として出す。コメント行も C 列の备注行。
 
 ---------------------------------------------------------------------------
-4) 諸経費 6% / 消費税 10%（机制推断）
+4) 諸経費 6% / 出精値引 / 消費税 10%（2026-11-07 帳票 96–102 行の式で検証済み）
 ---------------------------------------------------------------------------
-- 諸経費：对「課税対象工事小计」按比例；Excel 常写作 `=ROUND(小计单元格*6%, 0)`。
-- 消費税：对 (工事本体+諸経費-値引等) 的課税標準額 ×10%；或 `=ROUND(税抜合計*0.1,0)`。
-- 本引擎在 JSON 中输出 tax_base_lines / suggested_6pct / suggested_10pct 供对账，不代替 Excel 精度。
+- 諸経費：`=ROUNDDOWN(小計*6%, 0)` — 切り捨て。ROUND_HALF_UP だと ¥1 多い。
+- 出精値引：合計を千円単位に切り捨てる調整。`(合計 - ROUNDDOWN(合計,-3)) * -1`。
+- 消費税：課税標準は値引後の合計。`=ROUNDDOWN(値引後合計*10%, 0)`。
+- 本エンジンは JSON で money 行を出し、Excel 精度の代わりにはしない。
+  1415 号室の検証値：小計 370,209 / 諸経費 22,212 / 値引 -421 /
+  値引後合計 392,000 / 消費税 39,200 / 総合計 431,200。
 
 用法:
   python haseko_quote_sort_engine.py "path/to/見積登録….html"
@@ -76,7 +79,7 @@ import argparse
 import json
 import re
 from dataclasses import dataclass, field, asdict
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_DOWN, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -142,7 +145,21 @@ SELECT_RE = re.compile(
     r'<select\b[^>]*\bname="(?P<name>[^"]+)"[^>]*>(?P<body>.*?)</select>',
     re.I | re.DOTALL,
 )
-SELECTED_OPTION_RE = re.compile(r'<option[^>]+selected[^>]+value="(?P<v>[^"]*)"', re.I)
+OPTION_TAG_RE = re.compile(r"<option\b[^>]*>", re.I)
+OPTION_VALUE_RE = re.compile(r'\bvalue="(?P<v>[^"]*)"', re.I)
+
+
+def _selected_option_value(body: str) -> str | None:
+    """selected の付いた option の value を返す。value と selected の順序は問わない。
+    旧正規表現は selected が value より前にあること前提で、実 HTML の
+    `<option value="10" selected="">` を読めず全桶が "1" になっていた (Bug 1)。"""
+    for m in OPTION_TAG_RE.finditer(body):
+        tag = m.group(0)
+        if re.search(r"\bselected\b", tag, re.I):
+            vm = OPTION_VALUE_RE.search(tag)
+            if vm:
+                return vm.group("v")
+    return None
 
 
 def _strip_tags(s: str) -> str:
@@ -168,9 +185,9 @@ def extract_selects(html: str) -> dict[str, str]:
     for m in SELECT_RE.finditer(html):
         name = m.group("name")
         body = m.group("body")
-        sm = SELECTED_OPTION_RE.search(body)
-        if sm:
-            out[name] = sm.group("v")
+        sv = _selected_option_value(body)
+        if sv is not None:
+            out[name] = sv
         else:
             om = re.search(r"<option[^>]+value=\"([^\"]+)\"", body, re.I)
             if om:
@@ -305,6 +322,7 @@ class SortEngineState:
     current_koshu2_cd: str = ""
     current_koshu2_text: str = ""
     current_koshu2_cd_from_hidden: str = ""
+    current_koshu2_koban: str = ""
 
 
 def walk_and_bucket(raw: list[HasekoRawRow]) -> tuple[list[EnrichedDetail], list[dict[str, Any]]]:
@@ -324,6 +342,7 @@ def walk_and_bucket(raw: list[HasekoRawRow]) -> tuple[list[EnrichedDetail], list
         if r.row_kbn == "2":
             st.current_koshu2_text = r.koshu2_text
             st.current_koshu2_cd_from_hidden = r.koshu2_cd
+            st.current_koshu2_koban = r.koshu2_koban
             st.current_koshu2_cd = r.sel_koshu2_cd or r.koshu2_cd
             continue
         if r.row_kbn == "4":
@@ -345,6 +364,7 @@ def walk_and_bucket(raw: list[HasekoRawRow]) -> tuple[list[EnrichedDetail], list
             "koshu1_text": st.current_koshu1,
             "koshu2_text": st.current_koshu2_text,
             "koshu2_cd": st.current_koshu2_cd_from_hidden,
+            "koshu2_koban": st.current_koshu2_koban,
             "sel_koshu2_cd": cd,
             "kojikomoku_id": kvid,
             "taisho1": r.taisho1,
@@ -359,6 +379,10 @@ def walk_and_bucket(raw: list[HasekoRawRow]) -> tuple[list[EnrichedDetail], list
             "kakaku": r.kakaku,
             "biko1": r.biko1,
             "biko2": r.biko2,
+            "kashinushi_futan_wariai": r.kashinushi_futan_wariai,
+            "kashinushi_futan_kingaku": r.kashinushi_futan_kingaku,
+            "karinushi_futan_wariai": r.karinushi_futan_wariai,
+            "karinushi_futan_kingaku": r.karinushi_futan_kingaku,
             "maker": r.maker,
             "type": r.type_,
             "list_price": r.price,
@@ -396,9 +420,21 @@ def _dec(s: str) -> Decimal:
         return Decimal(0)
 
 
+def _round_down_int(x: Decimal) -> Decimal:
+    return x.quantize(Decimal("1"), rounding=ROUND_DOWN)
+
+
+def _round_down_thousands(x: Decimal) -> Decimal:
+    return (x // Decimal(1000)) * Decimal(1000)
+
+
 def compute_money_lines(details: list[EnrichedDetail]) -> dict[str, Any]:
-    """小计与建议諸経費/消费税（与 Excel 具体取行范围无关的金额核对）。"""
+    """帳票 96–102 行の式どおりの金額行。1415 号室の検証値:
+    小計 370,209 / 諸経費 22,212 / 値引 -421 / 値引後合計 392,000 /
+    消費税 39,200 / 総合計 431,200 / 貸主小計 219,193 / 借主小計 151,016。"""
     subtotal = Decimal(0)
+    lender_sum = Decimal(0)
+    borrower_sum = Decimal(0)
     lines: list[dict[str, Any]] = []
     for d in details:
         suryo = _dec(d.fields.get("suryo"))
@@ -407,73 +443,276 @@ def compute_money_lines(details: list[EnrichedDetail]) -> dict[str, Any]:
         if kakaku == 0 and suryo and tanka:
             kakaku = (suryo * tanka).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
         subtotal += kakaku
+        lender = _dec(d.fields.get("kashinushi_futan_kingaku"))
+        borrower = _dec(d.fields.get("karinushi_futan_kingaku"))
+        lender_sum += lender
+        borrower_sum += borrower
         lines.append(
             {
                 "bucket_cd": d.bucket_cd,
                 "kojikomoku_id": d.kojikomoku_id,
                 "amount": str(kakaku),
+                "lender_amount": str(lender),
+                "borrower_amount": str(borrower),
             }
         )
-    six = (subtotal * Decimal("0.06")).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
-    ten_base = subtotal + six
-    ten = (ten_base * Decimal("0.10")).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    six = _round_down_int(subtotal * Decimal("0.06"))
+    pre_nebiki = subtotal + six
+    nebiki = -(pre_nebiki - _round_down_thousands(pre_nebiki))
+    total_after = pre_nebiki + nebiki
+    ten = _round_down_int(total_after * Decimal("0.10"))
+    grand = total_after + ten
     return {
         "subtotal_construction": str(subtotal),
+        "shokeihi_6pct": str(six),
+        "total_before_nebiki": str(pre_nebiki),
+        "shussei_nebiki": str(nebiki),
+        "total_after_nebiki": str(total_after),
+        "consumption_tax_10pct": str(ten),
+        "grand_total": str(grand),
+        "lender_subtotal": str(lender_sum),
+        "borrower_subtotal": str(borrower_sum),
+        # 旧キー名（互換用）。中身は修正後の値：課税標準は値引後の合計。
         "suggested_shokeihi_6pct": str(six),
-        "suggested_taxable_before_10pct": str(ten_base),
+        "suggested_taxable_before_10pct": str(total_after),
         "suggested_consumption_tax_10pct": str(ten),
         "lines": lines,
     }
 
 
-# 推断的「項目」Sheet 列名（请用 template.xlsx 校对）
-EXCEL_KOUMOKU_COLUMN_MAP: dict[str, str] = {
-    "taisho1": "C",
-    "taisho2": "D",
-    "basho": "E",
-    "bui": "F",
-    "zumen_suryo": "G",
-    "suryo": "H",
-    "tani": "I",
-    "tanka": "J",
-    "kakaku": "K",
-    "koji_naiyo": "B",
+# 検証済み「帳票」Sheet 列マップ（2026-11-07、1415号室実物で検証）
+EXCEL_CHOHYO_SHEET = "帳票"
+EXCEL_CHOHYO_HEADER_ROW = 20
+EXCEL_CHOHYO_DATA_START_ROW = 24
+# 非クロス明細行の列。クロス行は C=部屋名、N/R=天井/壁に統合する。
+EXCEL_CHOHYO_COLUMN_MAP: dict[str, str] = {
+    "name": "C",            # taisho1 + koji_naiyo（実表で確認。例：浴室鏡＋交換）
+    "basho": "O",
+    "zumen_suryo": "AD",
+    "suryo": "AH",
+    "tani": "AL",
+    "tanka": "AO",
+    "kakaku": "AS",
+    "biko1": "AC",
+    "kashinushi_futan_wariai": "AW",
+    "kashinushi_futan_kingaku": "AY",
+    "karinushi_futan_wariai": "BC",
+    "karinushi_futan_kingaku": "BE",
 }
+# 旧名（互換用）。中身は帳票マップ。旧推断（項目・A–K）は廃止。
+EXCEL_KOUMOKU_COLUMN_MAP = EXCEL_CHOHYO_COLUMN_MAP
 
 
-def to_excel_koumoku_json(sorted_details: list[EnrichedDetail], start_row: int = 15) -> dict[str, Any]:
+def _col_cells(pairs: dict[str, Any]) -> dict[str, str]:
+    return {c: str(v).strip() if v is not None else "" for c, v in pairs.items()}
+
+
+def _fmt_num(x: Decimal) -> str:
+    """Decimal を末尾ゼロなしの素直な文字列に（5.00→5、17.70→17.7）。"""
+    t = format(x.normalize(), "f") if x == x.to_integral_value() else format(x, "f")
+    if "." in t:
+        t = t.rstrip("0").rstrip(".")
+    return t if t not in ("", "-0") else "0"
+
+
+def _first(*vals: str) -> str:
+    for v in vals:
+        if v:
+            return v
+    return ""
+
+
+def to_excel_chohyo_json(
+    sorted_details: list[EnrichedDetail],
+    comments: list[dict[str, Any]] | None = None,
+    start_row: int = EXCEL_CHOHYO_DATA_START_ROW,
+) -> dict[str, Any]:
+    """帳票シートに書き込める行オブジェクトを返す。
+
+    並びはソート済み明細順。クロス（工種2 cd=1、部位が天井/壁）は
+    部屋ごとに 1 行へ統合（N=天井数量、R=壁数量、AH=N+R、AY/BE は合計）。
+    工種1/工種2の切替わりでタイトル行、メーカー・型番のある明細の直後に
+    附注行、コメントは元の行順に挿入する。行番号は start_row から連番で
+    振り直す（実表は途中に空行を挟み、鍵/固定の工種1タイトル行が空行に
+    なっている箇所があるため、後半の物理行番号は実表とずれる。列は検証済み）。
     """
-    输出可写入「項目」sheet 的 row objects：
-    excel_cell 仅含推断列；start_row 可通过打开 xlsx 看标题行后调整。
-    """
-    rows_out: list[dict[str, Any]] = []
-    for i, d in enumerate(sorted_details):
-        rnum = start_row + i
-        cells: dict[str, str] = {}
-        for fname, col in EXCEL_KOUMOKU_COLUMN_MAP.items():
-            val = d.fields.get(fname, "")
-            if val is None:
-                val = ""
-            cells[f"{col}{rnum}"] = str(val).strip()
-        rows_out.append(
-            {
-                "logical_row": i + 1,
-                "excel_data_row": rnum,
-                "bucket_cd": d.bucket_cd,
-                "kojikomoku_id": d.kojikomoku_id,
-                "cells": cells,
-                "raw_fields": d.fields,
-            }
+    comments = comments or []
+    # --- 論理行（列→値、行番号なし）を組み立てる ---
+    logical: list[dict[str, Any]] = []
+    cur_k1: str | None = None
+    cur_k2: tuple[str, str] | None = None
+
+    def title_rows_for(d: EnrichedDetail) -> None:
+        nonlocal cur_k1, cur_k2
+        k1 = d.fields.get("koshu1_text", "")
+        k2 = (d.fields.get("koshu2_cd", ""), d.fields.get("koshu2_text", ""))
+        if k1 and k1 != cur_k1:
+            logical.append(
+                {"row_kind": "koshu1_title", "src": d.source_row_index,
+                 "cells": {"A": k1}}
+            )
+            cur_k1 = k1
+            # 工種2タイトルは全局で一度だけ出す。実表でも「その他設備」は
+            # 工種1が変わってもタイトル行は 1 回（帳票 52 行）だけ。
+        if k2 != cur_k2:
+            cur_k2 = k2
+            cd, text = k2
+            label = text or str(KOUSHU2_META.get(cd, {}).get("label") or "")
+            koban = d.fields.get("koshu2_koban", "")
+            # 実表の規則：名称ありの工種2タイトルは A=小番、C=名称。
+            # 名称なし（クリーニング/雑など）は A 空欄、C=工種名。
+            cells = {"C": label} if not text else {"A": koban, "C": text}
+            logical.append(
+                {"row_kind": "koshu2_title", "src": d.source_row_index,
+                 "cells": cells}
+            )
+
+    def maker_note_for(d: EnrichedDetail) -> None:
+        maker = d.fields.get("maker", "")
+        type_ = d.fields.get("type", "")
+        price = d.fields.get("list_price", "")
+        if not (maker or type_):
+            return
+        note = "／".join([x for x in [maker, type_] if x])
+        if price:
+            note += f"／(定価){price}"
+        logical.append(
+            {"row_kind": "maker_note", "src": d.source_row_index,
+             "cells": {"C": note}}
         )
+
+    # クロス明細を部屋ごとに統合（ソート順での初出順を保つ）
+    cross_groups: dict[str, list[EnrichedDetail]] = {}
+    cross_order: list[str] = []
+    singles: list[EnrichedDetail] = []
+    for d in sorted_details:
+        if d.bucket_cd == "1" and d.fields.get("bui") in ("天井", "壁"):
+            key = d.fields.get("basho", "")
+            if key not in cross_groups:
+                cross_groups[key] = []
+                cross_order.append(key)
+            cross_groups[key].append(d)
+        else:
+            singles.append(d)
+
+    def emit_cross(room: str, group: list[EnrichedDetail]) -> None:
+        first = group[0]
+        title_rows_for(first)
+        tenjo = next((g for g in group if g.fields.get("bui") == "天井"), None)
+        kabe = next((g for g in group if g.fields.get("bui") == "壁"), None)
+        n = _dec(tenjo.fields.get("suryo")) if tenjo else Decimal(0)
+        r = _dec(kabe.fields.get("suryo")) if kabe else Decimal(0)
+        ref = tenjo or kabe or first
+        cells = {
+            "C": room,
+            "N": _fmt_num(n) if tenjo else "",
+            "R": _fmt_num(r) if kabe else "",
+            "AH": _fmt_num(n + r),
+            "AL": _first(*(g.fields.get("tani", "") for g in group)),
+            "AO": _first(*(g.fields.get("tanka", "") for g in group)),
+            "AS": _fmt_num(sum((_dec(g.fields.get("kakaku")) for g in group), Decimal(0))),
+            "AC": _first(*(g.fields.get("biko1", "") for g in group)),
+            "AD": _first(*(g.fields.get("zumen_suryo", "") for g in group)),
+            "AW": ref.fields.get("kashinushi_futan_wariai", ""),
+            "AY": _fmt_num(sum((_dec(g.fields.get("kashinushi_futan_kingaku")) for g in group), Decimal(0))),
+            "BC": ref.fields.get("karinushi_futan_wariai", ""),
+            "BE": _fmt_num(sum((_dec(g.fields.get("karinushi_futan_kingaku")) for g in group), Decimal(0))),
+        }
+        logical.append(
+            {"row_kind": "cross_merged", "src": first.source_row_index,
+             "bucket_cd": "1", "room": room, "cells": _col_cells(cells)}
+        )
+
+    def emit_single(d: EnrichedDetail) -> None:
+        title_rows_for(d)
+        f = d.fields
+        name = (f.get("taisho1", "") + f.get("koji_naiyo", "")).strip()
+        cells = {
+            "C": name,
+            "O": f.get("basho", ""),
+            "AD": f.get("zumen_suryo", ""),
+            "AH": f.get("suryo", ""),
+            "AL": f.get("tani", ""),
+            "AO": f.get("tanka", ""),
+            "AS": f.get("kakaku", ""),
+            "AC": f.get("biko1", ""),
+            "AW": f.get("kashinushi_futan_wariai", ""),
+            "AY": f.get("kashinushi_futan_kingaku", ""),
+            "BC": f.get("karinushi_futan_wariai", ""),
+            "BE": f.get("karinushi_futan_kingaku", ""),
+        }
+        logical.append(
+            {"row_kind": "detail", "src": d.source_row_index,
+             "bucket_cd": d.bucket_cd, "kojikomoku_id": d.kojikomoku_id,
+             "cells": _col_cells(cells), "raw_fields": f}
+        )
+        maker_note_for(d)
+
+    # ソート順を保ちつつ、クロスは統合行として初出位置で出す
+    emitted_cross: set[str] = set()
+    for d in sorted_details:
+        if d.bucket_cd == "1" and d.fields.get("bui") in ("天井", "壁"):
+            room = d.fields.get("basho", "")
+            if room in emitted_cross:
+                continue
+            emitted_cross.add(room)
+            emit_cross(room, cross_groups[room])
+        else:
+            emit_single(d)
+
+    # コメント行を元の行順に挿入
+    for c in sorted(comments, key=lambda x: x["row_index"]):
+        pos = len(logical)
+        for i, row in enumerate(logical):
+            if row["src"] > c["row_index"]:
+                pos = i
+                break
+        logical.insert(
+            pos,
+            {"row_kind": "comment", "src": c["row_index"],
+             "cells": {"C": c["comment"]}},
+        )
+
+    rows_out: list[dict[str, Any]] = []
+    for i, row in enumerate(logical):
+        rnum = start_row + i
+        cells = {f"{col}{rnum}": val for col, val in row["cells"].items()}
+        out = {
+            "logical_row": i + 1,
+            "excel_row": rnum,
+            "row_kind": row["row_kind"],
+            "cells": cells,
+        }
+        for k in ("bucket_cd", "kojikomoku_id", "room", "raw_fields"):
+            if k in row:
+                out[k] = row[k]
+        rows_out.append(out)
     return {
         "meta": {
             "engine": "haseko_quote_sort_engine",
-            "excel_column_map_hypothesis": EXCEL_KOUMOKU_COLUMN_MAP,
-            "data_start_row_hypothesis": start_row,
+            "sheet": EXCEL_CHOHYO_SHEET,
+            "header_row": EXCEL_CHOHYO_HEADER_ROW,
+            "data_start_row": start_row,
+            "excel_column_map_verified": EXCEL_CHOHYO_COLUMN_MAP,
+            "notes": [
+                "列は 2026-11-07 に 1415 号室の帳票実物で検証済み。",
+                "クロスは部屋ごとに天井/壁を 1 行へ統合。AY/BE は部屋合計。",
+                "BI（削除/修正前）は HTML に情報がないため出力しない。",
+                "図面数量（AD）は本案で有値がなく未検証。",
+                "実表は途中に空行があり、鍵/固定の工種1タイトル行が空行のため、"
+                "後半の物理行番号は実表とずれる。列の対応は変わらない。",
+            ],
         },
-        "koumoku_rows": rows_out,
+        "chohyo_rows": rows_out,
         "money": compute_money_lines(sorted_details),
     }
+
+
+def to_excel_koumoku_json(sorted_details: list[EnrichedDetail], start_row: int = EXCEL_CHOHYO_DATA_START_ROW) -> dict[str, Any]:
+    """旧 API（互換用）。中身は検証済みの帳票マップ。"""
+    payload = to_excel_chohyo_json(sorted_details, [], start_row)
+    payload["koumoku_rows"] = payload["chohyo_rows"]
+    return payload
 
 
 def parse_html_file(path: Path) -> dict[str, Any]:
@@ -481,7 +720,7 @@ def parse_html_file(path: Path) -> dict[str, Any]:
     raw = parse_costs_table(html)
     details, comments = walk_and_bucket(raw)
     sorted_d = sort_details_like_backend(details)
-    payload = to_excel_koumoku_json(sorted_d)
+    payload = to_excel_chohyo_json(sorted_d, comments)
     payload["parse"] = {
         "source_file": str(path),
         "raw_row_count": len(raw),

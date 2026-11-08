@@ -31,7 +31,23 @@ const KOUSHU2_SORT_ORDER = [
 const INPUT_RE = /<input\b[^>]*\bname="([^"]+)"[^>]*(?:\/>|>)/gi;
 const VALUE_RE = /\bvalue="([^"]*)"/i;
 const SELECT_RE = /<select\b[^>]*\bname="([^"]+)"[^>]*>([\s\S]*?)<\/select>/gi;
-const SELECTED_OPTION_RE = /<option[^>]+selected[^>]+value="([^"]*)"/i;
+const OPTION_TAG_RE = /<option\b[^>]*>/gi;
+const OPTION_VALUE_RE = /\bvalue="([^"]*)"/i;
+
+// selected の付いた option の value を返す。value と selected の順序は問わない。
+// 旧正規表現は `<option value="10" selected="">` を読めず全桶が "1" になっていた。
+function selectedOptionValue(body) {
+  let m;
+  OPTION_TAG_RE.lastIndex = 0;
+  while ((m = OPTION_TAG_RE.exec(body)) !== null) {
+    const tag = m[0];
+    if (/\bselected\b/i.test(tag)) {
+      const vm = OPTION_VALUE_RE.exec(tag);
+      if (vm) return vm[1];
+    }
+  }
+  return null;
+}
 
 function extractInputs(html) {
   const out = {};
@@ -54,8 +70,8 @@ function extractSelects(html) {
   while ((m = SELECT_RE.exec(html)) !== null) {
     const name = m[1];
     const body = m[2];
-    const sm = SELECTED_OPTION_RE.exec(body);
-    if (sm) out[name] = sm[1];
+    const sv = selectedOptionValue(body);
+    if (sv !== null) out[name] = sv;
     else {
       const om = /<option[^>]+value="([^"]+)"/i.exec(body);
       if (om) out[name] = om[1];
@@ -137,7 +153,8 @@ function walkAndBucket(raw) {
     current_koshu1: "",
     current_koshu2_cd: "",
     current_koshu2_text: "",
-    current_koshu2_cd_from_hidden: ""
+    current_koshu2_cd_from_hidden: "",
+    current_koshu2_koban: ""
   };
   const details = [];
   const comments = [];
@@ -149,6 +166,7 @@ function walkAndBucket(raw) {
     if (r.row_kbn === "2") {
       st.current_koshu2_text = r.koshu2_text;
       st.current_koshu2_cd_from_hidden = r.koshu2_cd;
+      st.current_koshu2_koban = r.koshu2_koban;
       st.current_koshu2_cd = r.sel_koshu2_cd || r.koshu2_cd;
       continue;
     }
@@ -163,6 +181,7 @@ function walkAndBucket(raw) {
       koshu1_text: st.current_koshu1,
       koshu2_text: st.current_koshu2_text,
       koshu2_cd: st.current_koshu2_cd_from_hidden,
+      koshu2_koban: st.current_koshu2_koban,
       sel_koshu2_cd: cd,
       kojikomoku_id: r.kojikomoku_id.trim(),
       taisho1: r.taisho1,
@@ -177,6 +196,10 @@ function walkAndBucket(raw) {
       kakaku: r.kakaku,
       biko1: r.biko1,
       biko2: r.biko2,
+      kashinushi_futan_wariai: r.kashinushi_futan_wariai,
+      kashinushi_futan_kingaku: r.kashinushi_futan_kingaku,
+      karinushi_futan_wariai: r.karinushi_futan_wariai,
+      karinushi_futan_kingaku: r.karinushi_futan_kingaku,
       maker: r.maker,
       type: r.type,
       list_price: r.price
@@ -212,8 +235,14 @@ function dec(s) {
   return Number.isFinite(n) ? n : 0;
 }
 
+// 帳票 96–102 行の式どおり。諸経費は ROUNDDOWN、出精値引で千円単位に切り捨て、
+// 消費税の課税標準は値引後の合計。1415 号室の検証値：
+// 小計 370,209 / 諸経費 22,212 / 値引 -421 / 値引後合計 392,000 /
+// 消費税 39,200 / 総合計 431,200 / 貸主小計 219,193 / 借主小計 151,016。
 function computeMoney(details) {
   let subtotal = 0;
+  let lenderSum = 0;
+  let borrowerSum = 0;
   const lines = [];
   for (const d of details) {
     const suryo = dec(d.fields.suryo);
@@ -221,59 +250,195 @@ function computeMoney(details) {
     let kakaku = dec(d.fields.kakaku);
     if (!kakaku && suryo && tanka) kakaku = Math.round(suryo * tanka);
     subtotal += kakaku;
-    lines.push({ bucket_cd: d.bucket_cd, kojikomoku_id: d.kojikomoku_id, amount: String(kakaku) });
+    const lender = dec(d.fields.kashinushi_futan_kingaku);
+    const borrower = dec(d.fields.karinushi_futan_kingaku);
+    lenderSum += lender;
+    borrowerSum += borrower;
+    lines.push({ bucket_cd: d.bucket_cd, kojikomoku_id: d.kojikomoku_id, amount: String(kakaku), lender_amount: String(lender), borrower_amount: String(borrower) });
   }
-  const six = Math.round(subtotal * 0.06);
-  const tenBase = subtotal + six;
-  const ten = Math.round(tenBase * 0.1);
+  const six = Math.floor(subtotal * 0.06);
+  const preNebiki = subtotal + six;
+  const nebiki = -(preNebiki - Math.floor(preNebiki / 1000) * 1000);
+  const totalAfter = preNebiki + nebiki;
+  const ten = Math.floor(totalAfter * 0.1);
+  const grand = totalAfter + ten;
   return {
     subtotal_construction: String(subtotal),
+    shokeihi_6pct: String(six),
+    total_before_nebiki: String(preNebiki),
+    shussei_nebiki: String(nebiki),
+    total_after_nebiki: String(totalAfter),
+    consumption_tax_10pct: String(ten),
+    grand_total: String(grand),
+    lender_subtotal: String(lenderSum),
+    borrower_subtotal: String(borrowerSum),
     suggested_shokeihi_6pct: String(six),
-    suggested_taxable_before_10pct: String(tenBase),
+    suggested_taxable_before_10pct: String(totalAfter),
     suggested_consumption_tax_10pct: String(ten),
     lines
   };
 }
 
-const COLMAP = {
-  taisho1: "C",
-  taisho2: "D",
-  basho: "E",
-  bui: "F",
-  zumen_suryo: "G",
-  suryo: "H",
-  tani: "I",
-  tanka: "J",
-  kakaku: "K",
-  koji_naiyo: "B"
+// 検証済み「帳票」Sheet 列マップ（2026-11-07、1415号室実物で検証）。
+// 旧推断（項目・A–K・15 行目）は誤りだったため置き換えた。
+const CHOHYO_SHEET = "帳票";
+const CHOHYO_HEADER_ROW = 20;
+const CHOHYO_DATA_START_ROW = 24;
+const CHOHYO_COLUMN_MAP = {
+  name: "C", // taisho1 + koji_naiyo（実表で確認）
+  basho: "O",
+  zumen_suryo: "AD",
+  suryo: "AH",
+  tani: "AL",
+  tanka: "AO",
+  kakaku: "AS",
+  biko1: "AC",
+  kashinushi_futan_wariai: "AW",
+  kashinushi_futan_kingaku: "AY",
+  karinushi_futan_wariai: "BC",
+  karinushi_futan_kingaku: "BE"
 };
+const COLMAP = CHOHYO_COLUMN_MAP; // 旧名（互換用）
 
-function toKoumokuJson(sorted, startRow = 15) {
-  const koumoku_rows = sorted.map((d, i) => {
+function firstNonEmpty(...vals) {
+  for (const v of vals) if (v) return v;
+  return "";
+}
+
+function toChohyoJson(sorted, comments = [], startRow = CHOHYO_DATA_START_ROW) {
+  const logical = [];
+  let curK1 = null;
+  let curK2 = null;
+  const titleRowsFor = (d) => {
+    const k1 = d.fields.koshu1_text || "";
+    const k2 = [d.fields.koshu2_cd || "", d.fields.koshu2_text || ""];
+    if (k1 && k1 !== curK1) {
+      logical.push({ row_kind: "koshu1_title", src: d.source_row_index, cells: { A: k1 } });
+      curK1 = k1;
+      // 工種2タイトルは全局で一度だけ出す。実表でも「その他設備」は
+      // 工種1が変わってもタイトル行は 1 回（帳票 52 行）だけ。
+    }
+    if (JSON.stringify(k2) !== JSON.stringify(curK2)) {
+      curK2 = k2;
+      const [cd, text] = k2;
+      const label = text || KOUSHU2_META[cd]?.label || "";
+      const koban = d.fields.koshu2_koban || "";
+      const cells = text ? { A: koban, C: text } : { C: label };
+      logical.push({ row_kind: "koshu2_title", src: d.source_row_index, cells });
+    }
+  };
+  const makerNoteFor = (d) => {
+    const maker = d.fields.maker || "";
+    const type = d.fields.type || "";
+    const price = d.fields.list_price || "";
+    if (!maker && !type) return;
+    let note = [maker, type].filter(Boolean).join("／");
+    if (price) note += `／(定価)${price}`;
+    logical.push({ row_kind: "maker_note", src: d.source_row_index, cells: { C: note } });
+  };
+  const crossGroups = new Map();
+  for (const d of sorted) {
+    if (d.bucket_cd === "1" && (d.fields.bui === "天井" || d.fields.bui === "壁")) {
+      const key = d.fields.basho || "";
+      if (!crossGroups.has(key)) crossGroups.set(key, []);
+      crossGroups.get(key).push(d);
+    }
+  }
+  const emitCross = (room, group) => {
+    const first = group[0];
+    titleRowsFor(first);
+    const tenjo = group.find((g) => g.fields.bui === "天井");
+    const kabe = group.find((g) => g.fields.bui === "壁");
+    const n = tenjo ? dec(tenjo.fields.suryo) : 0;
+    const r = kabe ? dec(kabe.fields.suryo) : 0;
+    const ref = tenjo || kabe || first;
+    const cells = {
+      C: room,
+      N: tenjo ? String(n) : "",
+      R: kabe ? String(r) : "",
+      AH: String(n + r),
+      AL: firstNonEmpty(...group.map((g) => g.fields.tani || "")),
+      AO: firstNonEmpty(...group.map((g) => g.fields.tanka || "")),
+      AS: String(group.reduce((a, g) => a + dec(g.fields.kakaku), 0)),
+      AC: firstNonEmpty(...group.map((g) => g.fields.biko1 || "")),
+      AD: firstNonEmpty(...group.map((g) => g.fields.zumen_suryo || "")),
+      AW: ref.fields.kashinushi_futan_wariai || "",
+      AY: String(group.reduce((a, g) => a + dec(g.fields.kashinushi_futan_kingaku), 0)),
+      BC: ref.fields.karinushi_futan_wariai || "",
+      BE: String(group.reduce((a, g) => a + dec(g.fields.karinushi_futan_kingaku), 0))
+    };
+    logical.push({ row_kind: "cross_merged", src: first.source_row_index, bucket_cd: "1", room, cells });
+  };
+  const emitSingle = (d) => {
+    titleRowsFor(d);
+    const f = d.fields;
+    const cells = {
+      C: `${f.taisho1 || ""}${f.koji_naiyo || ""}`.trim(),
+      O: f.basho || "",
+      AD: f.zumen_suryo || "",
+      AH: f.suryo || "",
+      AL: f.tani || "",
+      AO: f.tanka || "",
+      AS: f.kakaku || "",
+      AC: f.biko1 || "",
+      AW: f.kashinushi_futan_wariai || "",
+      AY: f.kashinushi_futan_kingaku || "",
+      BC: f.karinushi_futan_wariai || "",
+      BE: f.karinushi_futan_kingaku || ""
+    };
+    logical.push({ row_kind: "detail", src: d.source_row_index, bucket_cd: d.bucket_cd, kojikomoku_id: d.kojikomoku_id, cells, raw_fields: f });
+    makerNoteFor(d);
+  };
+  const emittedCross = new Set();
+  for (const d of sorted) {
+    if (d.bucket_cd === "1" && (d.fields.bui === "天井" || d.fields.bui === "壁")) {
+      const room = d.fields.basho || "";
+      if (emittedCross.has(room)) continue;
+      emittedCross.add(room);
+      emitCross(room, crossGroups.get(room));
+    } else {
+      emitSingle(d);
+    }
+  }
+  for (const c of [...comments].sort((a, b) => a.row_index - b.row_index)) {
+    let pos = logical.length;
+    for (let i = 0; i < logical.length; i++) {
+      if (logical[i].src > c.row_index) { pos = i; break; }
+    }
+    logical.splice(pos, 0, { row_kind: "comment", src: c.row_index, cells: { C: c.comment } });
+  }
+  const chohyo_rows = logical.map((row, i) => {
     const rnum = startRow + i;
     const cells = {};
-    for (const [fname, col] of Object.entries(COLMAP)) {
-      const val = d.fields[fname] ?? "";
-      cells[`${col}${rnum}`] = String(val).trim();
-    }
-    return {
-      logical_row: i + 1,
-      excel_data_row: rnum,
-      bucket_cd: d.bucket_cd,
-      kojikomoku_id: d.kojikomoku_id,
-      cells,
-      raw_fields: d.fields
-    };
+    for (const [col, val] of Object.entries(row.cells)) cells[`${col}${rnum}`] = String(val ?? "").trim();
+    const out = { logical_row: i + 1, excel_row: rnum, row_kind: row.row_kind, cells };
+    for (const k of ["bucket_cd", "kojikomoku_id", "room", "raw_fields"]) if (k in row) out[k] = row[k];
+    return out;
   });
   return {
     meta: {
       engine: "run-haseko-sort-engine.mjs (parity with haseko_quote_sort_engine.py)",
-      excel_column_map_hypothesis: COLMAP,
-      data_start_row_hypothesis: startRow
+      sheet: CHOHYO_SHEET,
+      header_row: CHOHYO_HEADER_ROW,
+      data_start_row: startRow,
+      excel_column_map_verified: CHOHYO_COLUMN_MAP,
+      notes: [
+        "列は 2026-11-07 に 1415 号室の帳票実物で検証済み。",
+        "クロスは部屋ごとに天井/壁を 1 行へ統合。AY/BE は部屋合計。",
+        "BI（削除/修正前）は HTML に情報がないため出力しない。",
+        "図面数量（AD）は本案で有値がなく未検証。",
+        "実表は途中に空行があり、鍵/固定の工種1タイトル行が空行のため、後半の物理行番号は実表とずれる。列の対応は変わらない。"
+      ]
     },
-    koumoku_rows,
+    chohyo_rows,
     money: computeMoney(sorted)
   };
+}
+
+function toKoumokuJson(sorted, startRow = CHOHYO_DATA_START_ROW) {
+  const payload = toChohyoJson(sorted, [], startRow);
+  payload.koumoku_rows = payload.chohyo_rows;
+  return payload;
 }
 
 const htmlPath = process.argv[2] || path.join(import.meta.dirname, "..", "見積登録　エスティメゾン豊洲レジデンスＡ棟　1415号室.html");
@@ -288,7 +453,7 @@ const html = fs.readFileSync(htmlPath, "utf-8");
 const raw = parseCostsTable(html);
 const { details, comments } = walkAndBucket(raw);
 const sorted = sortDetails(details);
-const payload = toKoumokuJson(sorted);
+const payload = toChohyoJson(sorted, comments);
 payload.parse = {
   source_file: htmlPath,
   raw_row_count: raw.length,
